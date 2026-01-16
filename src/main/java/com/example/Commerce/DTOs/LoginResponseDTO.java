@@ -3,7 +3,7 @@ package com.example.Commerce.DTOs;
 import lombok.Data;
 
 @Data
-public class UserResponseDTO {
+public class LoginResponseDTO {
     private Long id;
     private String firstName;
     private String lastName;
@@ -11,3 +11,4 @@ public class UserResponseDTO {
     private String role;
     private String token;
 }
+

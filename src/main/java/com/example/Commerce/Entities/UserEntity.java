@@ -43,6 +43,7 @@ public class UserEntity {
     private LocalDateTime updatedAt;
 
     @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
     private UserRole role;
 
 

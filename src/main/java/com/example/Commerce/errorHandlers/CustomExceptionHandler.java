@@ -23,13 +23,24 @@ public class CustomExceptionHandler {
     }
 
     @ExceptionHandler(value = EmailAlreadyExists.class)
-    public ResponseEntity<?> handleEmailAlreadyExistsException(EmailAlreadyExists ex, WebRequest request){
+    public ResponseEntity<?> handleEmailAlreadyExistsException(EmailAlreadyExists ex, WebRequest request) {
         HashMap<String, Object> error = new HashMap<>();
         error.put("timestamp", new Date());
         error.put("message", ex.getMessage());
         error.put(("path"), request.getDescription(false));
-        return new ResponseEntity<>(error,HttpStatus.CONFLICT);
+        return new ResponseEntity<>(error, HttpStatus.CONFLICT);
     }
+
+    @ExceptionHandler(value = Exception.class)
+    public ResponseEntity<?> handleGlobalException(Exception ex, WebRequest request){
+        HashMap<String, Object> error = new HashMap<>();
+        error.put("timestamp", new Date());
+        error.put("message", ex.getMessage());
+        error.put(("path"), request.getDescription(false));
+        return new ResponseEntity<>(error,HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+
 
 
 }
