@@ -1,8 +1,10 @@
 package com.example.Commerce.errorHandlers;
 
 
+import org.hibernate.JDBCException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -26,8 +28,8 @@ public class CustomExceptionHandler {
         return new ResponseEntity<>(error,HttpStatus.NOT_FOUND);
     }
 
-    @ExceptionHandler(value = EmailAlreadyExists.class)
-    public ResponseEntity<?> handleEmailAlreadyExistsException(EmailAlreadyExists ex, WebRequest request) {
+    @ExceptionHandler(value = ResourceAlreadyExists.class)
+    public ResponseEntity<?> handleEmailAlreadyExistsException(ResourceAlreadyExists ex, WebRequest request) {
         HashMap<String, Object> error = new HashMap<>();
         error.put("timestamp", new Date());
         error.put("message", ex.getMessage());
@@ -72,5 +74,24 @@ public class CustomExceptionHandler {
         error.put("message", ex.getMessage());
         error.put("path", request.getDescription(false));
         return new ResponseEntity<>(error, HttpStatus.UNAUTHORIZED);
+    }
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<?> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex, WebRequest request) {
+        HashMap<String, Object> error = new HashMap<>();
+        error.put("timestamp", new Date());
+        error.put("status", HttpStatus.BAD_REQUEST.value());
+        error.put("message", "Required request body is missing or malformed");
+        error.put("path", request.getDescription(false));
+
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(value = JDBCException.class)
+    public ResponseEntity<?> handleJDBCException(JDBCException ex, WebRequest request) {
+        HashMap<String, Object> error = new HashMap<>();
+        error.put("timestamp", new Date());
+        error.put("message", "Database error: " + ex.getMessage());
+        error.put("path", request.getDescription(false));
+        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

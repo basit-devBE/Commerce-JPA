@@ -4,7 +4,7 @@ import com.example.Commerce.DTOs.*;
 import com.example.Commerce.Entities.UserEntity;
 import com.example.Commerce.Mappers.UserMapper;
 import com.example.Commerce.Repositories.UserRepository;
-import com.example.Commerce.errorHandlers.EmailAlreadyExists;
+import com.example.Commerce.errorHandlers.ResourceAlreadyExists;
 import com.example.Commerce.errorHandlers.ResourceNotFoundException;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +31,7 @@ public class UserService {
 
         Optional<UserEntity> existingUser = userRepository.findByEmail(userDTO.getEmail());
         if(existingUser.isPresent()){
-            throw new EmailAlreadyExists("Email already exists: " + userDTO.getEmail());
+            throw new ResourceAlreadyExists("Email already exists: " + userDTO.getEmail());
         } else {
             UserEntity userEntity = userMapper.toEntity(userDTO);
             

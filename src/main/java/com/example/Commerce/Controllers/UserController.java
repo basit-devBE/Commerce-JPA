@@ -76,6 +76,18 @@ public class UserController {
         ApiResponse<userSummaryDTO> apiResponse = new ApiResponse<>(HttpStatus.OK.value(), "User profile updated successfully", updatedUser);
         return ResponseEntity.ok(apiResponse);
     }
+    @Operation(
+        summary = "Get authenticated user's profile",
+        description = "Fetches the profile details of the authenticated user."
+    )
+    @GetMapping("/profile")
+    public ResponseEntity<ApiResponse<userSummaryDTO>> getProfile(HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("authenticatedUserId");
+        userSummaryDTO user = userService.findUserById(userId);
+        ApiResponse<userSummaryDTO> apiResponse = new ApiResponse<>(HttpStatus.OK.value(), "User profile fetched successfully", user);
+        return ResponseEntity.ok(apiResponse);
+    }
+
 
 
     @RequiresRole(UserRole.ADMIN)
