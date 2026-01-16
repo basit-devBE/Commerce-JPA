@@ -53,22 +53,23 @@ public class UserController {
         ApiResponse<userSummaryDTO> apiResponse = new ApiResponse<>(HttpStatus.OK.value(), "User fetched successfully", user);
         return ResponseEntity.ok(apiResponse);
     }
-    @Operation(
-        summary = "Get user by Email",
-        description = "Fetches user details based on the provided email."
-    )
-    @GetMapping("/email/{email}")
-    public ResponseEntity<ApiResponse<userSummaryDTO>> getUserByEmail(@PathVariable String email) {
-        userSummaryDTO user = userService.findUserByEmail(email);
-        ApiResponse<userSummaryDTO> apiResponse = new ApiResponse<>(HttpStatus.OK.value(), "User fetched successfully", user);
-        return ResponseEntity.ok(apiResponse);
-    }
+//    @Operation(
+//        summary = "Get user by Email",
+//        description = "Fetches user details based on the provided email."
+//    )
+//    @GetMapping("/email/{email}")
+//    public ResponseEntity<ApiResponse<userSummaryDTO>> getUserByEmail(@PathVariable String email) {
+//        userSummaryDTO user = userService.findUserByEmail(email);
+//        ApiResponse<userSummaryDTO> apiResponse = new ApiResponse<>(HttpStatus.OK.value(), "User fetched successfully", user);
+//        return ResponseEntity.ok(apiResponse);
+//    }
+
     @Operation(
         summary = "Update user details",
         description = "Updates the details of an existing user."
     )
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<userSummaryDTO>> updateUser(@PathVariable Long id, @Valid @RequestBody UserRegistrationDTO request) {
+    public ResponseEntity<ApiResponse<userSummaryDTO>> updateUser(@PathVariable Long id, @Valid @RequestBody UpdateUserDTO request) {
         userSummaryDTO updatedUser = userService.updateUser(id, request);
         ApiResponse<userSummaryDTO> apiResponse = new ApiResponse<>(HttpStatus.OK.value(), "User updated successfully", updatedUser);
         return ResponseEntity.ok(apiResponse);
@@ -87,6 +88,13 @@ public class UserController {
         );
         ApiResponse<PagedResponse<userSummaryDTO>> apiResponse = 
                 new ApiResponse<>(HttpStatus.OK.value(), "Users fetched successfully", pagedResponse);
+        return ResponseEntity.ok(apiResponse);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable Long id) {
+        userService.deleteUser(id);
+        ApiResponse<Void> apiResponse = new ApiResponse<>(HttpStatus.OK.value(), "User deleted successfully", null);
         return ResponseEntity.ok(apiResponse);
     }
 }
