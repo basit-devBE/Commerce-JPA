@@ -3,13 +3,11 @@ package com.example.Commerce.Config;
 
 import com.example.Commerce.Entities.UserEntity;
 import com.example.Commerce.Repositories.UserRepository;
-import com.example.Commerce.errorHandlers.ResourceNotFoundException;
 import com.example.Commerce.errorHandlers.UnauthorizedException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
