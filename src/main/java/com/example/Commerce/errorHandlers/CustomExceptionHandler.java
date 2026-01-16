@@ -65,8 +65,12 @@ public class CustomExceptionHandler {
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
 
-
-
-
-
+    @ExceptionHandler(value = UnauthorizedException.class)
+    public ResponseEntity<?> handleUnauthorizedException(UnauthorizedException ex, WebRequest request) {
+        HashMap<String, Object> error = new HashMap<>();
+        error.put("timestamp", new Date());
+        error.put("message", ex.getMessage());
+        error.put("path", request.getDescription(false));
+        return new ResponseEntity<>(error, HttpStatus.UNAUTHORIZED);
+    }
 }

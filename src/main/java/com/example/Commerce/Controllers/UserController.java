@@ -1,7 +1,9 @@
 package com.example.Commerce.Controllers;
 
 
+import com.example.Commerce.Config.RequiresRole;
 import com.example.Commerce.DTOs.*;
+import com.example.Commerce.Enums.UserRole;
 import com.example.Commerce.Services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -74,7 +76,7 @@ public class UserController {
         ApiResponse<userSummaryDTO> apiResponse = new ApiResponse<>(HttpStatus.OK.value(), "User updated successfully", updatedUser);
         return ResponseEntity.ok(apiResponse);
     }
-
+    @RequiresRole(UserRole.ADMIN)
     @GetMapping("/all")
    public ResponseEntity<ApiResponse<PagedResponse<userSummaryDTO>>> getAllUsers(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
         Pageable pageable = Pageable.ofSize(size).withPage(page);

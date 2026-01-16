@@ -49,7 +49,7 @@ public class UserService {
         if(userOpt.isPresent()){
             UserEntity userEntity = userOpt.get();
             if(BCrypt.checkpw(loginDTO.getPassword(), userEntity.getPassword())){
-                String randomString = UUID.randomUUID().toString();
+                String randomString = UUID.randomUUID().toString().replace("-", "");
                 String token = randomString + "-" + userEntity.getId();
                 LoginResponseDTO responseDTO = userMapper.toResponseDTO(userEntity);
                 responseDTO.setToken(token);
