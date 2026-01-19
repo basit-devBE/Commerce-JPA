@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { productAPI, categoryAPI, inventoryAPI, orderAPI } from '../services/api';
+import React, { useState, useEffect, useCallback } from 'react';
+import { productAPI, categoryAPI, orderAPI } from '../services/api';
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 const AdminDashboard = () => {
@@ -9,11 +9,7 @@ const AdminDashboard = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    fetchData();
-  }, [activeTab]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       if (activeTab === 'products') {
@@ -31,7 +27,11 @@ const AdminDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTab]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const tabs = [
     { id: 'products', name: 'Products' },

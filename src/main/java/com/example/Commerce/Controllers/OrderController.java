@@ -21,7 +21,7 @@ public class OrderController {
         this.orderService = orderService;
     }
 
-    @RequiresRole(UserRole.CUSTOMER)
+    @RequiresRole({UserRole.CUSTOMER, UserRole.ADMIN})
     @PostMapping("/create")
     public ResponseEntity<ApiResponse<OrderResponseDTO>> createOrder(
             @Valid @RequestBody AddOrderDTO request,
@@ -52,7 +52,7 @@ public class OrderController {
         return ResponseEntity.ok(apiResponse);
     }
 
-    @RequiresRole(UserRole.CUSTOMER)
+    @RequiresRole({UserRole.CUSTOMER, UserRole.ADMIN})
     @GetMapping("/user")
     public ResponseEntity<ApiResponse<PagedResponse<OrderResponseDTO>>> getOrdersByUserId(
             HttpServletRequest httpRequest,

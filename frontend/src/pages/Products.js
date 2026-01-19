@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { productAPI, categoryAPI } from '../services/api';
 import { useCart } from '../context/CartContext';
@@ -15,12 +15,7 @@ const Products = () => {
   const { addToCart } = useCart();
   const [addedToCart, setAddedToCart] = useState(null);
 
-  useEffect(() => {
-    fetchProducts();
-    fetchCategories();
-  }, [page]);
-
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     try {
       setLoading(true);
       const response = await productAPI.getAll({ page, size: 12 });
@@ -31,16 +26,21 @@ const Products = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page]);
 
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     try {
       const response = await categoryAPI.getAll({ page: 0, size: 100 });
       setCategories(response.data.data.content);
     } catch (error) {
       console.error('Error fetching categories:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchProducts();
+    fetchCategories();
+  }, [fetchProducts, fetchCategories]);
 
   const handleAddToCart = (product) => {
     addToCart(product);
