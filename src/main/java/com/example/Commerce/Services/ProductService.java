@@ -20,11 +20,13 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
     private final CategoryRepository categoryRepository;
+    private final com.example.Commerce.Repositories.InventoryRepository inventoryRepository;
 
-    public ProductService(ProductRepository productRepository, ProductMapper productMapper,CategoryRepository categoryRepository) {
+    public ProductService(ProductRepository productRepository, ProductMapper productMapper,CategoryRepository categoryRepository, com.example.Commerce.Repositories.InventoryRepository inventoryRepository) {
         this.productRepository = productRepository;
         this.productMapper = productMapper;
         this.categoryRepository = categoryRepository;
+        this.inventoryRepository = inventoryRepository;
     }
 
     public ProductResponseDTO addProduct(AddProductDTO addProductDTO){
@@ -38,11 +40,22 @@ public class ProductService {
         ProductEntity savedProduct = productRepository.save(productEntity);
         ProductResponseDTO response =  productMapper.toResponseDTO(savedProduct);
         response.setCategoryName(savedProduct.getCategory().getName());
+        
+        // Set quantity from inventory if exists
+        inventoryRepository.findByProductId(savedProduct.getId())
+                .ifPresent(inventory -> response.setQuantity(inventory.getQuantity()));
+        
         return response;
     }
 
     public Page<ProductResponseDTO> getAllProducts(Pageable pageable){
-        return productRepository.findAll(pageable).map(productMapper::toResponseDTO);
+        return productRepository.findAll(pageable).map(product -> {
+            ProductResponseDTO response = productMapper.toResponseDTO(product);
+            // Set quantity from inventory if exists
+            inventoryRepository.findByProductId(product.getId())
+                    .ifPresent(inventory -> response.setQuantity(inventory.getQuantity()));
+            return response;
+        });
     }
 
     public ProductResponseDTO getProductById(Long id){
@@ -50,6 +63,11 @@ public class ProductService {
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with ID: " + id));
         ProductResponseDTO response = productMapper.toResponseDTO(product);
         response.setCategoryName(product.getCategory().getName());
+        
+        // Set quantity from inventory if exists
+        inventoryRepository.findByProductId(product.getId())
+                .ifPresent(inventory -> response.setQuantity(inventory.getQuantity()));
+        
         return response;
     }
 
@@ -90,6 +108,11 @@ public class ProductService {
         ProductEntity updatedProduct = productRepository.save(existingProduct);
         ProductResponseDTO response = productMapper.toResponseDTO(updatedProduct);
         response.setCategoryName(updatedProduct.getCategory().getName());
+        
+        // Set quantity from inventory if exists
+        inventoryRepository.findByProductId(updatedProduct.getId())
+                .ifPresent(inventory -> response.setQuantity(inventory.getQuantity()));
+        
         return response;
     }
 

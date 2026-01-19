@@ -4,6 +4,7 @@ import com.example.Commerce.Config.RequiresRole;
 import com.example.Commerce.DTOs.*;
 import com.example.Commerce.Enums.UserRole;
 import com.example.Commerce.Services.OrderService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,7 +23,11 @@ public class OrderController {
 
     @RequiresRole(UserRole.CUSTOMER)
     @PostMapping("/create")
-    public ResponseEntity<ApiResponse<OrderResponseDTO>> createOrder(@Valid @RequestBody AddOrderDTO request) {
+    public ResponseEntity<ApiResponse<OrderResponseDTO>> createOrder(
+            @Valid @RequestBody AddOrderDTO request,
+            HttpServletRequest httpRequest) {
+        Long authenticatedUserId = (Long) httpRequest.getAttribute("authenticatedUserId");
+        request.setUserId(authenticatedUserId);
         OrderResponseDTO order = orderService.createOrder(request);
         ApiResponse<OrderResponseDTO> apiResponse = new ApiResponse<>(HttpStatus.OK.value(), "Order created successfully", order);
         return ResponseEntity.ok(apiResponse);
@@ -48,14 +53,15 @@ public class OrderController {
     }
 
     @RequiresRole(UserRole.CUSTOMER)
-    @GetMapping("/user/{userId}")
+    @GetMapping("/user")
     public ResponseEntity<ApiResponse<PagedResponse<OrderResponseDTO>>> getOrdersByUserId(
-            @PathVariable Long userId,
+            HttpServletRequest httpRequest,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size
     ) {
+        Long authenticatedUserId = (Long) httpRequest.getAttribute("authenticatedUserId");
         Pageable pageable = Pageable.ofSize(size).withPage(page);
-        Page<OrderResponseDTO> orders = orderService.getOrdersByUserId(userId, pageable);
+        Page<OrderResponseDTO> orders = orderService.getOrdersByUserId(authenticatedUserId, pageable);
         PagedResponse<OrderResponseDTO> pagedResponse = new PagedResponse<>(
                 orders.getContent(),
                 orders.getNumber(),
