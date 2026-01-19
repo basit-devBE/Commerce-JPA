@@ -2,8 +2,6 @@ package com.example.Commerce.DTOs;
 
 import com.example.Commerce.Enums.UserRole;
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data

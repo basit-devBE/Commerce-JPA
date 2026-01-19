@@ -1,10 +1,13 @@
 package com.example.Commerce.Controllers;
 
 
+import com.example.Commerce.Config.RequiresRole;
 import com.example.Commerce.DTOs.*;
+import com.example.Commerce.Enums.UserRole;
 import com.example.Commerce.Services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 import org.springframework.data.domain.Page;
@@ -53,28 +56,41 @@ public class UserController {
         ApiResponse<userSummaryDTO> apiResponse = new ApiResponse<>(HttpStatus.OK.value(), "User fetched successfully", user);
         return ResponseEntity.ok(apiResponse);
     }
-//    @Operation(
-//        summary = "Get user by Email",
-//        description = "Fetches user details based on the provided email."
-//    )
-//    @GetMapping("/email/{email}")
-//    public ResponseEntity<ApiResponse<userSummaryDTO>> getUserByEmail(@PathVariable String email) {
-//        userSummaryDTO user = userService.findUserByEmail(email);
-//        ApiResponse<userSummaryDTO> apiResponse = new ApiResponse<>(HttpStatus.OK.value(), "User fetched successfully", user);
-//        return ResponseEntity.ok(apiResponse);
-//    }
 
     @Operation(
         summary = "Update user details",
         description = "Updates the details of an existing user."
     )
-    @PutMapping("/{id}")
+    @RequiresRole(UserRole.ADMIN)
+    @PutMapping("/update/{id}")
     public ResponseEntity<ApiResponse<userSummaryDTO>> updateUser(@PathVariable Long id, @Valid @RequestBody UpdateUserDTO request) {
         userSummaryDTO updatedUser = userService.updateUser(id, request);
         ApiResponse<userSummaryDTO> apiResponse = new ApiResponse<>(HttpStatus.OK.value(), "User updated successfully", updatedUser);
         return ResponseEntity.ok(apiResponse);
     }
 
+    @PutMapping("/updateProfile")
+    public ResponseEntity<ApiResponse<userSummaryDTO>> updateProfile(HttpServletRequest request, @Valid @RequestBody UpdateUserDTO updateUserDTO) {
+        Long userId = (Long) request.getAttribute("authenticatedUserId");
+        userSummaryDTO updatedUser = userService.updateUser(userId, updateUserDTO);
+        ApiResponse<userSummaryDTO> apiResponse = new ApiResponse<>(HttpStatus.OK.value(), "User profile updated successfully", updatedUser);
+        return ResponseEntity.ok(apiResponse);
+    }
+    @Operation(
+        summary = "Get authenticated user's profile",
+        description = "Fetches the profile details of the authenticated user."
+    )
+    @GetMapping("/profile")
+    public ResponseEntity<ApiResponse<userSummaryDTO>> getProfile(HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("authenticatedUserId");
+        userSummaryDTO user = userService.findUserById(userId);
+        ApiResponse<userSummaryDTO> apiResponse = new ApiResponse<>(HttpStatus.OK.value(), "User profile fetched successfully", user);
+        return ResponseEntity.ok(apiResponse);
+    }
+
+
+
+    @RequiresRole(UserRole.ADMIN)
     @GetMapping("/all")
    public ResponseEntity<ApiResponse<PagedResponse<userSummaryDTO>>> getAllUsers(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
         Pageable pageable = Pageable.ofSize(size).withPage(page);
@@ -91,6 +107,7 @@ public class UserController {
         return ResponseEntity.ok(apiResponse);
     }
 
+    @RequiresRole(UserRole.ADMIN)
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);

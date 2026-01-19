@@ -1,7 +1,9 @@
 package com.example.Commerce;
 
+import com.example.Commerce.Entities.CategoryEntity;
 import com.example.Commerce.Entities.UserEntity;
 import com.example.Commerce.Enums.UserRole;
+import com.example.Commerce.Repositories.CategoryRepository;
 import com.example.Commerce.Repositories.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.mindrot.jbcrypt.BCrypt;
@@ -11,10 +13,13 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 public class SeedData implements CommandLineRunner {
-    
-    private final UserRepository userRepository;
 
-    public SeedData(UserRepository userRepository) {
+
+    private final UserRepository userRepository;
+    private final CategoryRepository categoryRepository;
+
+    public SeedData(UserRepository userRepository, CategoryRepository categoryRepository) {
+        this.categoryRepository = categoryRepository;
         this.userRepository = userRepository;
     }
 
@@ -31,6 +36,7 @@ public class SeedData implements CommandLineRunner {
             admin.setPassword(BCrypt.hashpw("admin123", BCrypt.gensalt()));
             admin.setRole(UserRole.ADMIN);
             userRepository.save(admin);
+
             
             // Seller user
             UserEntity seller = new UserEntity();
@@ -133,6 +139,23 @@ public class SeedData implements CommandLineRunner {
             log.info("Seeded {} users successfully", userRepository.count());
         } else {
             log.info("Users already exist. Skipping seed data.");
+        }
+
+        if(categoryRepository.count() == 0){
+            log.info("Seeding categories...");
+            CategoryEntity electronics = new CategoryEntity();
+            electronics.setName("Electronics");
+            electronics.setDescription("Devices and gadgets including phones, laptops, and accessories.");
+            categoryRepository.save(electronics);
+
+            CategoryEntity fashion = new CategoryEntity();
+            fashion.setName("Fashion");
+            fashion.setDescription("Clothing, shoes, and accessories for men and women.");
+            categoryRepository.save(fashion);
+
+            log.info("Seeded {} categories successfully", categoryRepository.count());
+        }else{
+            log.info("Categories already exist. Skipping seed data.");
         }
     }
 }
