@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -100,6 +101,10 @@ public class UserService {
 
     public Page<userSummaryDTO> getAllUsers(Pageable pageable){
       return userRepository.findAll(pageable).map(userMapper::toSummaryDTO);
+    }
+
+    public List<userSummaryDTO> getAllUsersList() {
+        return userRepository.findAll().stream().map(userMapper::toSummaryDTO).toList();
     }
 
     public void deleteUser(Long id){
