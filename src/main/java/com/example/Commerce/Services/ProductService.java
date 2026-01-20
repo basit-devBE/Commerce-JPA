@@ -130,6 +130,15 @@ public class ProductService {
         return response;
     }
 
+    public java.util.List<ProductResponseDTO> getAllProductsList() {
+        return productRepository.findAll().stream().map(product -> {
+            ProductResponseDTO response = productMapper.toResponseDTO(product);
+            inventoryRepository.findByProductId(product.getId())
+                    .ifPresent(inventory -> response.setQuantity(inventory.getQuantity()));
+            return response;
+        }).toList();
+    }
+
     public void deleteProduct(Long id){
         ProductEntity product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with ID: " + id));

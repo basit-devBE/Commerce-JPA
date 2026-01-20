@@ -1,0 +1,39 @@
+type User {
+    id: ID!
+    firstName: String!
+    lastName: String!
+    email: String!
+    role: UserRole!
+}
+
+enum UserRole {
+    CUSTOMER
+    ADMIN
+    SELLER
+}
+
+type Product {
+    id: ID!
+    name: String!
+    price: Float!
+    quantity: Int
+    categoryName: String
+}
+
+type Inventory {
+    id: ID!
+    productId: ID!
+    productName: String!
+    quantity: Int!
+    location: String!
+}
+
+type Query {
+    getUserById(id: ID!): User
+    getAllUsers: [User!]!
+    allProducts: [Product]
+    productById(id: ID!): Product
+    allInventories: [Inventory!]!
+    inventoryById(id: ID!): Inventory
+    inventoryByProductId(productId: ID!): Inventory
+}
