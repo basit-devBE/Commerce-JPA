@@ -16,6 +16,12 @@ const AdminDashboard = () => {
   const [newQuantity, setNewQuantity] = useState('');
   const [editingUser, setEditingUser] = useState(null);
   const [newUserData, setNewUserData] = useState({});
+  const [showAddProductModal, setShowAddProductModal] = useState(false);
+  const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
+  const [showAddInventoryModal, setShowAddInventoryModal] = useState(false);
+  const [newProduct, setNewProduct] = useState({ name: '', categoryId: '', price: '', sku: '', description: '' });
+  const [newCategory, setNewCategory] = useState({ name: '', description: '' });
+  const [newInventory, setNewInventory] = useState({ productId: '', quantity: '', location: '' });
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -42,6 +48,23 @@ const AdminDashboard = () => {
       setLoading(false);
     }
   }, [activeTab]);
+
+  // Fetch categories and products on mount for dropdowns
+  useEffect(() => {
+    const fetchCategoriesAndProducts = async () => {
+      try {
+        const [categoriesRes, productsRes] = await Promise.all([
+          categoryAPI.getAll({ page: 0, size: 100 }),
+          productAPI.getAll({ page: 0, size: 100 })
+        ]);
+        setCategories(categoriesRes.data.data.content);
+        setProducts(productsRes.data.data.content);
+      } catch (error) {
+        console.error('Error fetching categories and products:', error);
+      }
+    };
+    fetchCategoriesAndProducts();
+  }, []);
 
   useEffect(() => {
     fetchData();
@@ -96,6 +119,45 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleAddProduct = async (e) => {
+    e.preventDefault();
+    try {
+      await productAPI.create(newProduct);
+      setShowAddProductModal(false);
+      setNewProduct({ name: '', categoryId: '', price: '', sku: '', description: '' });
+      fetchData();
+    } catch (error) {
+      console.error('Error adding product:', error);
+      alert('Failed to add product');
+    }
+  };
+
+  const handleAddCategory = async (e) => {
+    e.preventDefault();
+    try {
+      await categoryAPI.create(newCategory);
+      setShowAddCategoryModal(false);
+      setNewCategory({ name: '', description: '' });
+      fetchData();
+    } catch (error) {
+      console.error('Error adding category:', error);
+      alert('Failed to add category');
+    }
+  };
+
+  const handleAddInventory = async (e) => {
+    e.preventDefault();
+    try {
+      await inventoryAPI.create(newInventory);
+      setShowAddInventoryModal(false);
+      setNewInventory({ productId: '', quantity: '', location: '' });
+      fetchData();
+    } catch (error) {
+      console.error('Error adding inventory:', error);
+      alert('Failed to add inventory');
+    }
+  };
+
   const tabs = [
     { id: 'products', name: 'Products' },
     { id: 'categories', name: 'Categories' },
@@ -145,7 +207,10 @@ const AdminDashboard = () => {
                   <div>
                     <div className="flex justify-between items-center mb-6">
                       <h2 className="text-xl font-semibold text-gray-900">Products Management</h2>
-                      <button className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                      <button 
+                        onClick={() => setShowAddProductModal(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                      >
                         <PlusIcon className="h-5 w-5" />
                         Add Product
                       </button>
@@ -203,7 +268,10 @@ const AdminDashboard = () => {
                   <div>
                     <div className="flex justify-between items-center mb-6">
                       <h2 className="text-xl font-semibold text-gray-900">Categories Management</h2>
-                      <button className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                      <button 
+                        onClick={() => setShowAddCategoryModal(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                      >
                         <PlusIcon className="h-5 w-5" />
                         Add Category
                       </button>
@@ -232,7 +300,16 @@ const AdminDashboard = () => {
                 {/* Inventory Tab */}
                 {activeTab === 'inventory' && (
                   <div>
-                    <h2 className="text-xl font-semibold text-gray-900 mb-6">Inventory Management</h2>
+                    <div className="flex justify-between items-center mb-6">
+                      <h2 className="text-xl font-semibold text-gray-900">Inventory Management</h2>
+                      <button 
+                        onClick={() => setShowAddInventoryModal(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                      >
+                        <PlusIcon className="h-5 w-5" />
+                        Add Inventory
+                      </button>
+                    </div>
                     <div className="overflow-x-auto">
                       <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
@@ -533,6 +610,209 @@ const AdminDashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Add Product Modal */}
+      {showAddProductModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold mb-4">Add New Product</h3>
+            <form onSubmit={handleAddProduct}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={newProduct.name}
+                    onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                  <select
+                    required
+                    value={newProduct.categoryId}
+                    onChange={(e) => setNewProduct({ ...newProduct, categoryId: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  >
+                    <option value="">Select a category</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">SKU</label>
+                  <input
+                    type="text"
+                    required
+                    value={newProduct.sku}
+                    onChange={(e) => setNewProduct({ ...newProduct, sku: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    value={newProduct.price}
+                    onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                  <textarea
+                    required
+                    value={newProduct.description}
+                    onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                    rows="3"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-3 mt-6">
+                <button
+                  type="submit"
+                  className="flex-1 bg-primary-600 text-white py-2 rounded-lg hover:bg-primary-700"
+                >
+                  Add Product
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddProductModal(false);
+                    setNewProduct({ name: '', categoryId: '', price: '', sku: '', description: '' });
+                  }}
+                  className="flex-1 bg-gray-200 text-gray-800 py-2 rounded-lg hover:bg-gray-300"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add Category Modal */}
+      {showAddCategoryModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold mb-4">Add New Category</h3>
+            <form onSubmit={handleAddCategory}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={newCategory.name}
+                    onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                  <textarea
+                    required
+                    value={newCategory.description}
+                    onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                    rows="3"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-3 mt-6">
+                <button
+                  type="submit"
+                  className="flex-1 bg-primary-600 text-white py-2 rounded-lg hover:bg-primary-700"
+                >
+                  Add Category
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddCategoryModal(false);
+                    setNewCategory({ name: '', description: '' });
+                  }}
+                  className="flex-1 bg-gray-200 text-gray-800 py-2 rounded-lg hover:bg-gray-300"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add Inventory Modal */}
+      {showAddInventoryModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold mb-4">Add Inventory Item</h3>
+            <form onSubmit={handleAddInventory}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Product</label>
+                  <select
+                    required
+                    value={newInventory.productId}
+                    onChange={(e) => setNewInventory({ ...newInventory, productId: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  >
+                    <option value="">Select a product</option>
+                    {products.map((product) => (
+                      <option key={product.id} value={product.id}>{product.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                  <input
+                    type="number"
+                    required
+                    min="0"
+                    value={newInventory.quantity}
+                    onChange={(e) => setNewInventory({ ...newInventory, quantity: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                  <input
+                    type="text"
+                    required
+                    value={newInventory.location}
+                    onChange={(e) => setNewInventory({ ...newInventory, location: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-3 mt-6">
+                <button
+                  type="submit"
+                  className="flex-1 bg-primary-600 text-white py-2 rounded-lg hover:bg-primary-700"
+                >
+                  Add Inventory
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddInventoryModal(false);
+                    setNewInventory({ productId: '', quantity: '', location: '' });
+                  }}
+                  className="flex-1 bg-gray-200 text-gray-800 py-2 rounded-lg hover:bg-gray-300"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -83,8 +83,8 @@ const Home = () => {
                   className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden"
                 >
                   <Link to={`/products/${product.id}`}>
-                    <div className="h-48 bg-gray-100 flex items-center justify-center">
-                      <ShoppingBagIcon className="h-20 w-20 text-gray-300" />
+                    <div className="bg-gradient-to-br from-primary-100 to-primary-200 h-48 flex items-center justify-center">
+                      <div className="text-6xl">📦</div>
                     </div>
                   </Link>
                   <div className="p-4">
