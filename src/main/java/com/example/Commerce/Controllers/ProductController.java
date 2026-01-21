@@ -11,6 +11,7 @@ import com.example.Commerce.DTOs.UpdateProductDTO;
 import com.example.Commerce.DTOs.ValidationErrorResponse;
 import com.example.Commerce.Enums.UserRole;
 import com.example.Commerce.Services.ProductService;
+import com.example.Commerce.utils.sorting.SortingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -23,14 +24,18 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Tag(name = "Product Management", description = "APIs for managing products")
 @RestController
 @RequestMapping("/api/products")
 public class ProductController {
     private final ProductService productService;
+    private final SortingService sortingService;
 
-    public ProductController(ProductService productService) {
+    public ProductController(ProductService productService, SortingService sortingService) {
         this.productService = productService;
+        this.sortingService = sortingService;
     }
 
     @Operation(summary = "Add a new product", description = "Creates a new product. Requires ADMIN role.")
@@ -67,7 +72,10 @@ public class ProductController {
     public ResponseEntity<ApiResponse<PagedResponse<ProductResponseDTO>>> getAllProducts(
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size,
-            @RequestParam(value = "categoryId", required = false) Long categoryId
+            @RequestParam(value = "categoryId", required = false) Long categoryId,
+            @RequestParam(value = "sortBy", required = false) String sortBy,
+            @RequestParam(value = "ascending", defaultValue = "true") boolean ascending,
+            @RequestParam(value = "algorithm", defaultValue = "QUICKSORT") String algorithm
     ){
         Pageable pageable = Pageable.ofSize(size).withPage(page);
         Page<ProductResponseDTO> products;
@@ -78,8 +86,21 @@ public class ProductController {
             products = productService.getAllProducts(pageable);
         }
         
+        List<ProductResponseDTO> productList = products.getContent();
+        
+        // Apply custom sorting if sortBy is specified
+        if (sortBy != null) {
+            try {
+                SortingService.ProductSortField field = SortingService.ProductSortField.valueOf(sortBy.toUpperCase());
+                SortingService.SortAlgorithm algo = SortingService.SortAlgorithm.valueOf(algorithm.toUpperCase());
+                sortingService.sortProducts(productList, field, ascending, algo);
+            } catch (IllegalArgumentException e) {
+                // Invalid sortBy or algorithm, ignore and return unsorted
+            }
+        }
+        
         PagedResponse<ProductResponseDTO> pagedResponse = new PagedResponse<>(
-                products.getContent(),
+                productList,
                 products.getNumber(),
                 (int) products.getTotalElements(),
                 products.getTotalPages(),
