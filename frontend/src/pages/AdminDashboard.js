@@ -9,6 +9,8 @@ const AdminDashboard = () => {
   const [orders, setOrders] = useState([]);
   const [inventory, setInventory] = useState([]);
   const [users, setUsers] = useState([]);
+  const [dbMetrics, setDbMetrics] = useState({});
+  const [cacheMetrics, setCacheMetrics] = useState({});
   const [loading, setLoading] = useState(false);
   const [editingOrder, setEditingOrder] = useState(null);
   const [newStatus, setNewStatus] = useState('');
@@ -41,6 +43,19 @@ const AdminDashboard = () => {
       } else if (activeTab === 'users') {
         const response = await userAPI.getAll({ page: 0, size: 100 });
         setUsers(response.data.data.content);
+      } else if (activeTab === 'performance') {
+        const [dbRes, cacheRes] = await Promise.all([
+          fetch('http://localhost:8080/api/performance/db-metrics', {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+          }),
+          fetch('http://localhost:8080/api/performance/cache-metrics', {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+          })
+        ]);
+        const dbData = await dbRes.json();
+        const cacheData = await cacheRes.json();
+        setDbMetrics(dbData.data || {});
+        setCacheMetrics(cacheData.data || {});
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -164,6 +179,7 @@ const AdminDashboard = () => {
     { id: 'inventory', name: 'Inventory' },
     { id: 'orders', name: 'Orders' },
     { id: 'users', name: 'Users' },
+    { id: 'performance', name: 'Performance' },
   ];
 
   return (
@@ -602,6 +618,69 @@ const AdminDashboard = () => {
                           ))}
                         </tbody>
                       </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Performance Tab */}
+                {activeTab === 'performance' && (
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900 mb-6">Performance Metrics</h2>
+                    
+                    <div className="mb-8">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Database Queries</h3>
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Query</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Count</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Avg Time</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Min Time</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Max Time</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Time</th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {Object.entries(dbMetrics).map(([key, metrics]) => (
+                              <tr key={key}>
+                                <td className="px-6 py-4 text-sm font-medium text-gray-900">{key}</td>
+                                <td className="px-6 py-4 text-sm text-gray-500">{metrics.count}</td>
+                                <td className="px-6 py-4 text-sm text-gray-500">{metrics.avgTime?.toFixed(2)} {metrics.unit}</td>
+                                <td className="px-6 py-4 text-sm text-gray-500">{metrics.minTime} {metrics.unit}</td>
+                                <td className="px-6 py-4 text-sm text-gray-500">{metrics.maxTime} {metrics.unit}</td>
+                                <td className="px-6 py-4 text-sm text-gray-500">{metrics.totalTime} {metrics.unit}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Cache Statistics</h3>
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cache Key</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hits</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Misses</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hit Rate</th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {Object.entries(cacheMetrics).map(([key, metrics]) => (
+                              <tr key={key}>
+                                <td className="px-6 py-4 text-sm font-medium text-gray-900">{key}</td>
+                                <td className="px-6 py-4 text-sm text-green-600">{metrics.hits}</td>
+                                <td className="px-6 py-4 text-sm text-red-600">{metrics.misses}</td>
+                                <td className="px-6 py-4 text-sm text-gray-900">{metrics.hitRate?.toFixed(2)}%</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   </div>
                 )}
