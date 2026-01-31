@@ -1,10 +1,10 @@
 package com.example.Commerce;
 
-import com.example.Commerce.Entities.CategoryEntity;
-import com.example.Commerce.Entities.UserEntity;
-import com.example.Commerce.Enums.UserRole;
-import com.example.Commerce.Repositories.CategoryRepository;
-import com.example.Commerce.Repositories.UserRepository;
+import com.example.Commerce.entities.CategoryEntity;
+import com.example.Commerce.entities.UserEntity;
+import com.example.Commerce.enums.UserRole;
+import com.example.Commerce.repositories.CategoryRepository;
+import com.example.Commerce.repositories.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.boot.CommandLineRunner;

@@ -1,8 +1,8 @@
 package com.example.Commerce.graphql;
 
-import com.example.Commerce.DTOs.AddProductDTO;
-import com.example.Commerce.DTOs.ProductResponseDTO;
-import com.example.Commerce.Services.ProductService;
+import com.example.Commerce.dtos.AddProductDTO;
+import com.example.Commerce.dtos.ProductResponseDTO;
+import com.example.Commerce.services.ProductService;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
