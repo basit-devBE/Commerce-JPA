@@ -1,13 +1,7 @@
 package com.example.Commerce.Controllers;
 
 import com.example.Commerce.Config.RequiresRole;
-import com.example.Commerce.DTOs.AddInventoryDTO;
-import com.example.Commerce.DTOs.ApiResponse;
-import com.example.Commerce.DTOs.ErrorResponse;
-import com.example.Commerce.DTOs.InventoryResponseDTO;
-import com.example.Commerce.DTOs.PagedResponse;
-import com.example.Commerce.DTOs.UpdateInventoryDTO;
-import com.example.Commerce.DTOs.ValidationErrorResponse;
+import com.example.Commerce.DTOs.*;
 import com.example.Commerce.Enums.UserRole;
 import com.example.Commerce.Services.InventoryService;
 import io.swagger.v3.oas.annotations.Operation;

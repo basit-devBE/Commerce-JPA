@@ -1,18 +1,10 @@
 package com.example.Commerce.Services;
 
 import com.example.Commerce.DTOs.*;
-import com.example.Commerce.Entities.InventoryEntity;
-import com.example.Commerce.Entities.OrderEntity;
-import com.example.Commerce.Entities.OrderItemsEntity;
-import com.example.Commerce.Entities.ProductEntity;
-import com.example.Commerce.Entities.UserEntity;
+import com.example.Commerce.Entities.*;
 import com.example.Commerce.Enums.OrderStatus;
 import com.example.Commerce.Mappers.OrderMapper;
-import com.example.Commerce.Repositories.InventoryRepository;
-import com.example.Commerce.Repositories.OrderItemsRepository;
-import com.example.Commerce.Repositories.OrderRepository;
-import com.example.Commerce.Repositories.ProductRepository;
-import com.example.Commerce.Repositories.UserRepository;
+import com.example.Commerce.Repositories.*;
 import com.example.Commerce.errorHandlers.ResourceNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

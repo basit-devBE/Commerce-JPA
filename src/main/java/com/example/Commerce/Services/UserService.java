@@ -8,9 +8,9 @@ import com.example.Commerce.errorHandlers.ResourceAlreadyExists;
 import com.example.Commerce.errorHandlers.ResourceNotFoundException;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
+import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

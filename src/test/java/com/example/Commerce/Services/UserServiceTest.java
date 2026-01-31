@@ -1,6 +1,7 @@
 package com.example.Commerce.Services;
 
 import com.example.Commerce.DTOs.LoginDTO;
+import com.example.Commerce.DTOs.LoginResponseDTO;
 import com.example.Commerce.Entities.UserEntity;
 import com.example.Commerce.Mappers.UserMapper;
 import com.example.Commerce.Repositories.UserRepository;
@@ -14,7 +15,8 @@ import org.mockito.MockitoAnnotations;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class UserServiceTest {
 
@@ -49,7 +51,7 @@ class UserServiceTest {
         loginDTO.setEmail(email);
         loginDTO.setPassword(password);
 
-        UserResponseDTO expectedResponse = new UserResponseDTO();
+        LoginResponseDTO expectedResponse = new LoginResponseDTO();
         expectedResponse.setId(userId);
         expectedResponse.setEmail(email);
 
@@ -57,7 +59,7 @@ class UserServiceTest {
         when(userMapper.toResponseDTO(userEntity)).thenReturn(expectedResponse);
 
         // Act
-        UserResponseDTO actualResponse = userService.loginUser(loginDTO);
+        LoginResponseDTO actualResponse = userService.loginUser(loginDTO);
 
         // Assert
         assertNotNull(actualResponse);
