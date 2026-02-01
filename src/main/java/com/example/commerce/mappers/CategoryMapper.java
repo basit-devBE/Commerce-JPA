@@ -1,8 +1,8 @@
-package com.example.Commerce.mappers;
+package com.example.commerce.mappers;
 
-import com.example.Commerce.dtos.AddCategoryDTO;
-import com.example.Commerce.dtos.CategoryResponseDTO;
-import com.example.Commerce.entities.CategoryEntity;
+import com.example.commerce.dtos.requests.AddCategoryDTO;
+import com.example.commerce.dtos.responses.CategoryResponseDTO;
+import com.example.commerce.entities.CategoryEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 

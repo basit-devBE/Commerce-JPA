@@ -1,7 +1,7 @@
-package com.example.Commerce.entities;
+package com.example.commerce.entities;
 
 
-import com.example.Commerce.enums.OrderStatus;
+import com.example.commerce.enums.OrderStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

@@ -1,4 +1,4 @@
-package com.example.Commerce.errorhandlers;
+package com.example.commerce.errorhandlers;
 
 public class UnauthorizedException extends RuntimeException {
     public UnauthorizedException(String message) {

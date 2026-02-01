@@ -1,9 +1,9 @@
-package com.example.Commerce.mappers;
+package com.example.commerce.mappers;
 
-import com.example.Commerce.dtos.LoginResponseDTO;
-import com.example.Commerce.dtos.UserRegistrationDTO;
-import com.example.Commerce.dtos.userSummaryDTO;
-import com.example.Commerce.entities.UserEntity;
+import com.example.commerce.dtos.responses.LoginResponseDTO;
+import com.example.commerce.dtos.requests.UserRegistrationDTO;
+import com.example.commerce.dtos.responses.userSummaryDTO;
+import com.example.commerce.entities.UserEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 

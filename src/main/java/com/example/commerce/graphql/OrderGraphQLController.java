@@ -1,11 +1,11 @@
-package com.example.Commerce.graphql;
+package com.example.commerce.graphql;
 
-import com.example.Commerce.dtos.AddOrderDTO;
-import com.example.Commerce.dtos.OrderItemDTO;
-import com.example.Commerce.dtos.OrderResponseDTO;
-import com.example.Commerce.dtos.UpdateOrderDTO;
-import com.example.Commerce.enums.OrderStatus;
-import com.example.Commerce.services.OrderService;
+import com.example.commerce.dtos.requests.AddOrderDTO;
+import com.example.commerce.dtos.requests.OrderItemDTO;
+import com.example.commerce.dtos.responses.OrderResponseDTO;
+import com.example.commerce.dtos.requests.UpdateOrderDTO;
+import com.example.commerce.enums.OrderStatus;
+import com.example.commerce.services.OrderService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;

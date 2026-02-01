@@ -1,20 +1,21 @@
-package com.example.Commerce.services;
+package com.example.commerce.services;
 
-import com.example.Commerce.dtos.AddProductDTO;
-import com.example.Commerce.dtos.ProductResponseDTO;
-import com.example.Commerce.dtos.UpdateProductDTO;
-import com.example.Commerce.entities.CategoryEntity;
-import com.example.Commerce.entities.ProductEntity;
-import com.example.Commerce.mappers.ProductMapper;
-import com.example.Commerce.repositories.CategoryRepository;
-import com.example.Commerce.repositories.ProductRepository;
-import com.example.Commerce.errorhandlers.ResourceAlreadyExists;
-import com.example.Commerce.errorhandlers.ResourceNotFoundException;
+import com.example.commerce.dtos.requests.AddProductDTO;
+import com.example.commerce.dtos.responses.PagedResponse;
+import com.example.commerce.dtos.responses.ProductResponseDTO;
+import com.example.commerce.dtos.requests.UpdateProductDTO;
+import com.example.commerce.entities.CategoryEntity;
+import com.example.commerce.entities.ProductEntity;
+import com.example.commerce.interfaces.IProductService;
+import com.example.commerce.mappers.ProductMapper;
+import com.example.commerce.repositories.CategoryRepository;
+import com.example.commerce.repositories.ProductRepository;
+import com.example.commerce.errorhandlers.ResourceAlreadyExists;
+import com.example.commerce.errorhandlers.ResourceNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
@@ -23,13 +24,13 @@ import java.util.List;
 
 @Slf4j
 @Service
-public class ProductService {
+public class ProductService implements IProductService {
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
     private final CategoryRepository categoryRepository;
-    private final com.example.Commerce.repositories.InventoryRepository inventoryRepository;
+    private final com.example.commerce.repositories.InventoryRepository inventoryRepository;
 
-    public ProductService(ProductRepository productRepository, ProductMapper productMapper,CategoryRepository categoryRepository, com.example.Commerce.repositories.InventoryRepository inventoryRepository) {
+    public ProductService(ProductRepository productRepository, ProductMapper productMapper,CategoryRepository categoryRepository, com.example.commerce.repositories.InventoryRepository inventoryRepository) {
         this.productRepository = productRepository;
         this.productMapper = productMapper;
         this.categoryRepository = categoryRepository;
@@ -55,34 +56,47 @@ public class ProductService {
         return response;
     }
 
-    public Page<ProductResponseDTO> getAllProducts(Pageable pageable){
+    @Cacheable(value = "products", key = "#pageable.pageNumber + '-' + #pageable.pageSize + '-' + #pageable.sort.toString()")
+    public PagedResponse<ProductResponseDTO> getAllProducts(Pageable pageable){
         log.info("Fetching all products from the db");
-         List<ProductResponseDTO> list = productRepository.findAll(pageable)
-            .stream()
+        Page<ProductResponseDTO> page = productRepository.findAll(pageable)
             .map(product -> {
                 ProductResponseDTO response = productMapper.toResponseDTO(product);
                 inventoryRepository.findByProductId(product.getId())
                         .ifPresent(inventory -> response.setQuantity(inventory.getQuantity()));
                 return response;
-            })
-            .toList();
+            });
 
-            return new PageImpl<>(list, pageable, productRepository.count());
+        return new PagedResponse<>(
+            page.getContent(),
+            page.getNumber(),
+            (int) page.getTotalElements(),
+            page.getTotalPages(),
+            page.isLast()
+        );
     }
         
-    @Cacheable(value = "productsByCategory", key = "#categoryId")
-    public Page<ProductResponseDTO> getProductsByCategory(Long categoryId, Pageable pageable){
+    @Cacheable(value = "productsByCategory", key = "#categoryId + '-' + #pageable.pageNumber + '-' + #pageable.pageSize")
+    public PagedResponse<ProductResponseDTO> getProductsByCategory(Long categoryId, Pageable pageable){
         // Validate category exists
         categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found with ID: " + categoryId));
         
-        return productRepository.findByCategoryId(categoryId, pageable).map(product -> {
+        Page<ProductResponseDTO> page = productRepository.findByCategoryId(categoryId, pageable).map(product -> {
             ProductResponseDTO response = productMapper.toResponseDTO(product);
             // Set quantity from inventory if exists
             inventoryRepository.findByProductId(product.getId())
                     .ifPresent(inventory -> response.setQuantity(inventory.getQuantity()));
             return response;
         });
+
+        return new PagedResponse<>(
+            page.getContent(),
+            page.getNumber(),
+            (int) page.getTotalElements(),
+            page.getTotalPages(),
+            page.isLast()
+        );
     }
 
      @Cacheable(value = "productById", key = "#id")
@@ -163,7 +177,7 @@ public class ProductService {
             productRepository.delete(product);
         } catch (Exception ex) {
             if (ex.getMessage() != null && ex.getMessage().contains("foreign key constraint")) {
-                throw new com.example.Commerce.errorhandlers.ConstraintViolationException(
+                throw new com.example.commerce.errorhandlers.ConstraintViolationException(
                     "Cannot delete product. It is being used in orders or inventory. Please remove related records first.");
             }
             throw ex;

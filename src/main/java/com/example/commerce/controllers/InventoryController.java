@@ -1,9 +1,13 @@
-package com.example.Commerce.controllers;
+package com.example.commerce.controllers;
 
-import com.example.Commerce.config.RequiresRole;
-import com.example.Commerce.dtos.*;
-import com.example.Commerce.enums.UserRole;
-import com.example.Commerce.services.InventoryService;
+import com.example.commerce.config.RequiresRole;
+import com.example.commerce.dtos.requests.AddInventoryDTO;
+import com.example.commerce.dtos.requests.UpdateInventoryDTO;
+import com.example.commerce.dtos.responses.ApiResponse;
+import com.example.commerce.dtos.responses.InventoryResponseDTO;
+import com.example.commerce.dtos.responses.PagedResponse;
+import com.example.commerce.enums.UserRole;
+import com.example.commerce.interfaces.IInventoryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -17,9 +21,9 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/inventory")
 public class InventoryController {
-    private final InventoryService inventoryService;
+    private final IInventoryService inventoryService;
 
-    public InventoryController(InventoryService inventoryService) {
+    public InventoryController(IInventoryService inventoryService) {
         this.inventoryService = inventoryService;
     }
 

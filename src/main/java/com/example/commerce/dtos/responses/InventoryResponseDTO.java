@@ -1,4 +1,4 @@
-package com.example.Commerce.dtos;
+package com.example.commerce.dtos.responses;
 
 import lombok.Data;
 

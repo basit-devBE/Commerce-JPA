@@ -1,10 +1,15 @@
-package com.example.Commerce.controllers;
+package com.example.commerce.controllers;
 
-import com.example.Commerce.config.RequiresRole;
-import com.example.Commerce.dtos.*;
-import com.example.Commerce.enums.UserRole;
-import com.example.Commerce.services.OrderService;
-import com.example.Commerce.utils.sorting.SortingService;
+import com.example.commerce.config.RequiresRole;
+import com.example.commerce.dtos.requests.AddOrderDTO;
+import com.example.commerce.dtos.requests.UpdateOrderDTO;
+import com.example.commerce.dtos.responses.ApiResponse;
+import com.example.commerce.dtos.responses.OrderResponseDTO;
+import com.example.commerce.dtos.responses.PagedResponse;
+import com.example.commerce.enums.UserRole;
+import com.example.commerce.interfaces.IOrderService;
+import com.example.commerce.services.OrderService;
+import com.example.commerce.utils.sorting.SortingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,10 +26,10 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/orders")
 public class OrderController {
-    private final OrderService orderService;
+    private final IOrderService orderService;
     private final SortingService sortingService;
 
-    public OrderController(OrderService orderService, SortingService sortingService) {
+    public OrderController(IOrderService orderService, SortingService sortingService) {
         this.orderService = orderService;
         this.sortingService = sortingService;
     }

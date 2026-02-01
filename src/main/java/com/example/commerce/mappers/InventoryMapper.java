@@ -1,7 +1,7 @@
-package com.example.Commerce.mappers;
+package com.example.commerce.mappers;
 
-import com.example.Commerce.dtos.InventoryResponseDTO;
-import com.example.Commerce.entities.InventoryEntity;
+import com.example.commerce.dtos.responses.InventoryResponseDTO;
+import com.example.commerce.entities.InventoryEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 

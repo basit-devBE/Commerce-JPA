@@ -1,6 +1,6 @@
-package com.example.Commerce.dtos;
+package com.example.commerce.dtos.responses;
 
-import com.example.Commerce.enums.UserRole;
+import com.example.commerce.enums.UserRole;
 import lombok.Data;
 
 @Data

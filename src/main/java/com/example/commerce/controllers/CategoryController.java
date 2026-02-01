@@ -1,9 +1,14 @@
-package com.example.Commerce.controllers;
+package com.example.commerce.controllers;
 
-import com.example.Commerce.config.RequiresRole;
-import com.example.Commerce.dtos.*;
-import com.example.Commerce.enums.UserRole;
-import com.example.Commerce.services.CategoryService;
+import com.example.commerce.config.RequiresRole;
+import com.example.commerce.dtos.requests.AddCategoryDTO;
+import com.example.commerce.dtos.requests.UpdateCategoryDTO;
+import com.example.commerce.dtos.responses.ApiResponse;
+import com.example.commerce.dtos.responses.CategoryResponseDTO;
+import com.example.commerce.dtos.responses.PagedResponse;
+import com.example.commerce.enums.UserRole;
+import com.example.commerce.interfaces.ICategoryService;
+import com.example.commerce.services.CategoryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -17,9 +22,9 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/categories")
 public class CategoryController {
-    private final CategoryService categoryService;
+    private final ICategoryService categoryService;
 
-    public CategoryController(CategoryService categoryService) {
+    public CategoryController(ICategoryService categoryService) {
         this.categoryService = categoryService;
     }
 

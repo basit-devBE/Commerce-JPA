@@ -1,11 +1,16 @@
-package com.example.Commerce.services;
+package com.example.commerce.services;
 
-import com.example.Commerce.dtos.*;
-import com.example.Commerce.entities.*;
-import com.example.Commerce.enums.OrderStatus;
-import com.example.Commerce.mappers.OrderMapper;
-import com.example.Commerce.repositories.*;
-import com.example.Commerce.errorhandlers.ResourceNotFoundException;
+import com.example.commerce.dtos.requests.AddOrderDTO;
+import com.example.commerce.dtos.requests.OrderItemDTO;
+import com.example.commerce.dtos.requests.UpdateOrderDTO;
+import com.example.commerce.dtos.responses.OrderItemResponseDTO;
+import com.example.commerce.dtos.responses.OrderResponseDTO;
+import com.example.commerce.entities.*;
+import com.example.commerce.enums.OrderStatus;
+import com.example.commerce.interfaces.IOrderService;
+import com.example.commerce.mappers.OrderMapper;
+import com.example.commerce.repositories.*;
+import com.example.commerce.errorhandlers.ResourceNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -16,7 +21,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-public class OrderService {
+public class OrderService implements IOrderService {
     private final OrderRepository orderRepository;
     private final OrderItemsRepository orderItemsRepository;
     private final ProductRepository productRepository;
@@ -153,7 +158,7 @@ public class OrderService {
             orderRepository.delete(order);
         } catch (Exception ex) {
             if (ex.getMessage() != null && ex.getMessage().contains("foreign key constraint")) {
-                throw new com.example.Commerce.errorhandlers.ConstraintViolationException(
+                throw new com.example.commerce.errorhandlers.ConstraintViolationException(
                     "Cannot delete order. It has related dependencies that must be removed first.");
             }
             throw ex;

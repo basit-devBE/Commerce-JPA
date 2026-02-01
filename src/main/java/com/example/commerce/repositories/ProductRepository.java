@@ -1,6 +1,6 @@
-package com.example.Commerce.repositories;
+package com.example.commerce.repositories;
 
-import com.example.Commerce.entities.ProductEntity;
+import com.example.commerce.entities.ProductEntity;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

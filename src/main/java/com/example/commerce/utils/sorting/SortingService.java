@@ -1,7 +1,7 @@
-package com.example.Commerce.utils.sorting;
+package com.example.commerce.utils.sorting;
 
-import com.example.Commerce.dtos.OrderResponseDTO;
-import com.example.Commerce.dtos.ProductResponseDTO;
+import com.example.commerce.dtos.responses.OrderResponseDTO;
+import com.example.commerce.dtos.responses.ProductResponseDTO;
 import org.springframework.stereotype.Service;
 
 import java.util.Comparator;

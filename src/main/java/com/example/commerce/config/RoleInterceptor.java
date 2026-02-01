@@ -1,7 +1,7 @@
-package com.example.Commerce.config;
+package com.example.commerce.config;
 
-import com.example.Commerce.enums.UserRole;
-import com.example.Commerce.errorhandlers.UnauthorizedException;
+import com.example.commerce.enums.UserRole;
+import com.example.commerce.errorhandlers.UnauthorizedException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.jspecify.annotations.NonNull;

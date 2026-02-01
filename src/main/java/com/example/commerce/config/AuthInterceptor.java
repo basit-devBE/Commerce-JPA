@@ -1,9 +1,9 @@
-package com.example.Commerce.config;
+package com.example.commerce.config;
 
 
-import com.example.Commerce.entities.UserEntity;
-import com.example.Commerce.repositories.UserRepository;
-import com.example.Commerce.errorhandlers.UnauthorizedException;
+import com.example.commerce.entities.UserEntity;
+import com.example.commerce.repositories.UserRepository;
+import com.example.commerce.errorhandlers.UnauthorizedException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;

@@ -1,4 +1,4 @@
-package com.example.commerce.dtos;
+package com.example.commerce.dtos.requests;
 
 
 import com.example.commerce.enums.UserRole;

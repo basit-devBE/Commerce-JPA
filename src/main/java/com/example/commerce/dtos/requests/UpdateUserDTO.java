@@ -1,6 +1,6 @@
-package com.example.Commerce.dtos;
+package com.example.commerce.dtos.requests;
 
-import com.example.Commerce.enums.UserRole;
+import com.example.commerce.enums.UserRole;
 import jakarta.validation.constraints.Email;
 import lombok.Data;
 

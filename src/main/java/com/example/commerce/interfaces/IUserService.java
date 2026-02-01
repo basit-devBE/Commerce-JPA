@@ -4,7 +4,7 @@ import com.example.commerce.dtos.requests.LoginDTO;
 import com.example.commerce.dtos.requests.UpdateUserDTO;
 import com.example.commerce.dtos.requests.UserRegistrationDTO;
 import com.example.commerce.dtos.responses.LoginResponseDTO;
-import com.example.commerce.dtos.responses.UserSummaryDTO;
+import com.example.commerce.dtos.responses.userSummaryDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -15,15 +15,15 @@ public interface IUserService {
 
     LoginResponseDTO loginUser(LoginDTO loginDTO);
 
-    UserSummaryDTO findUserByEmail(String email);
+    userSummaryDTO findUserByEmail(String email);
 
-    UserSummaryDTO findUserById(Long id);
+    userSummaryDTO findUserById(Long id);
 
-    UserSummaryDTO updateUser(Long id, UpdateUserDTO userDTO);
+    userSummaryDTO updateUser(Long id, UpdateUserDTO userDTO);
 
-    Page<UserSummaryDTO> getAllUsers(Pageable pageable);
+    Page<userSummaryDTO> getAllUsers(Pageable pageable);
 
-    List<UserSummaryDTO> getAllUsersList();
+    List<userSummaryDTO> getAllUsersList();
 
     void deleteUser(Long id);
 }

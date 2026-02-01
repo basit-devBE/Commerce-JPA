@@ -1,4 +1,4 @@
-package com.example.Commerce.enums;
+package com.example.commerce.enums;
 
 public enum UserRole {
     CUSTOMER,

@@ -1,11 +1,16 @@
-package com.example.Commerce.services;
+package com.example.commerce.services;
 
-import com.example.Commerce.dtos.*;
-import com.example.Commerce.entities.UserEntity;
-import com.example.Commerce.mappers.UserMapper;
-import com.example.Commerce.repositories.UserRepository;
-import com.example.Commerce.errorhandlers.ResourceAlreadyExists;
-import com.example.Commerce.errorhandlers.ResourceNotFoundException;
+import com.example.commerce.dtos.requests.LoginDTO;
+import com.example.commerce.dtos.requests.UpdateUserDTO;
+import com.example.commerce.dtos.requests.UserRegistrationDTO;
+import com.example.commerce.dtos.responses.LoginResponseDTO;
+import com.example.commerce.dtos.responses.userSummaryDTO;
+import com.example.commerce.entities.UserEntity;
+import com.example.commerce.interfaces.IUserService;
+import com.example.commerce.mappers.UserMapper;
+import com.example.commerce.repositories.UserRepository;
+import com.example.commerce.errorhandlers.ResourceAlreadyExists;
+import com.example.commerce.errorhandlers.ResourceNotFoundException;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.mindrot.jbcrypt.BCrypt;
@@ -19,7 +24,7 @@ import java.util.UUID;
 
 @Service
 @Slf4j
-public class UserService {
+public class UserService implements IUserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
 

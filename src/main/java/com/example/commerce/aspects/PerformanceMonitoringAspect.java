@@ -1,4 +1,4 @@
-package com.example.Commerce.aspects;
+package com.example.commerce.aspects;
 
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -19,7 +19,7 @@ public class PerformanceMonitoringAspect {
     private final Map<String, QueryMetrics> dbMetrics = new ConcurrentHashMap<>();
     private final Map<String, CacheMetrics> cacheMetrics = new ConcurrentHashMap<>();
 
-    @Around("execution(* com.example.Commerce.repositories..*(..))")
+    @Around("execution(* com.example.commerce.repositories..*(..))")
     public Object monitorDatabaseFetch(ProceedingJoinPoint joinPoint) throws Throwable {
         String fullSignature = joinPoint.getSignature().getDeclaringTypeName();
         String className = fullSignature.substring(fullSignature.lastIndexOf('.') + 1);

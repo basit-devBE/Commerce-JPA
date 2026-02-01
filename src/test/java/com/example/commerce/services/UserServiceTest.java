@@ -1,11 +1,11 @@
-package com.example.Commerce.services;
+package com.example.commerce.services;
 
-import com.example.Commerce.dtos.LoginDTO;
-import com.example.Commerce.dtos.LoginResponseDTO;
-import com.example.Commerce.entities.UserEntity;
-import com.example.Commerce.mappers.UserMapper;
-import com.example.Commerce.repositories.UserRepository;
-import com.example.Commerce.errorhandlers.ResourceNotFoundException;
+import com.example.commerce.dtos.requests.LoginDTO;
+import com.example.commerce.dtos.responses.LoginResponseDTO;
+import com.example.commerce.entities.UserEntity;
+import com.example.commerce.mappers.UserMapper;
+import com.example.commerce.repositories.UserRepository;
+import com.example.commerce.errorhandlers.ResourceNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mindrot.jbcrypt.BCrypt;

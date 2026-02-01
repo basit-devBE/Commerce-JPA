@@ -1,4 +1,4 @@
-package com.example.Commerce.config;
+package com.example.commerce.config;
 
 
 import org.springframework.context.annotation.Configuration;

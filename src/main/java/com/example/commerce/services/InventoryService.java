@@ -1,21 +1,22 @@
-package com.example.Commerce.services;
+package com.example.commerce.services;
 
-import com.example.Commerce.dtos.AddInventoryDTO;
-import com.example.Commerce.dtos.InventoryResponseDTO;
-import com.example.Commerce.dtos.UpdateInventoryDTO;
-import com.example.Commerce.entities.InventoryEntity;
-import com.example.Commerce.entities.ProductEntity;
-import com.example.Commerce.mappers.InventoryMapper;
-import com.example.Commerce.repositories.InventoryRepository;
-import com.example.Commerce.repositories.ProductRepository;
-import com.example.Commerce.errorhandlers.ResourceAlreadyExists;
-import com.example.Commerce.errorhandlers.ResourceNotFoundException;
+import com.example.commerce.dtos.requests.AddInventoryDTO;
+import com.example.commerce.dtos.requests.UpdateInventoryDTO;
+import com.example.commerce.dtos.responses.InventoryResponseDTO;
+import com.example.commerce.entities.InventoryEntity;
+import com.example.commerce.entities.ProductEntity;
+import com.example.commerce.interfaces.IInventoryService;
+import com.example.commerce.mappers.InventoryMapper;
+import com.example.commerce.repositories.InventoryRepository;
+import com.example.commerce.repositories.ProductRepository;
+import com.example.commerce.errorhandlers.ResourceAlreadyExists;
+import com.example.commerce.errorhandlers.ResourceNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 @Service
-public class InventoryService {
+public class InventoryService implements IInventoryService {
     private final InventoryRepository inventoryRepository;
     private final ProductRepository productRepository;
     private final InventoryMapper inventoryMapper;
@@ -106,7 +107,7 @@ public class InventoryService {
             inventoryRepository.delete(inventory);
         } catch (Exception ex) {
             if (ex.getMessage() != null && ex.getMessage().contains("foreign key constraint")) {
-                throw new com.example.Commerce.errorhandlers.ConstraintViolationException(
+                throw new com.example.commerce.errorhandlers.ConstraintViolationException(
                     "Cannot delete inventory. It has related dependencies that must be removed first.");
             }
             throw ex;

@@ -1,9 +1,9 @@
-package com.example.Commerce.graphql;
+package com.example.commerce.graphql;
 
-import com.example.Commerce.dtos.AddCategoryDTO;
-import com.example.Commerce.dtos.CategoryResponseDTO;
-import com.example.Commerce.dtos.UpdateCategoryDTO;
-import com.example.Commerce.services.CategoryService;
+import com.example.commerce.dtos.requests.AddCategoryDTO;
+import com.example.commerce.dtos.responses.CategoryResponseDTO;
+import com.example.commerce.dtos.requests.UpdateCategoryDTO;
+import com.example.commerce.services.CategoryService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;

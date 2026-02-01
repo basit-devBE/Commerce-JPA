@@ -1,6 +1,6 @@
-package com.example.Commerce.repositories;
+package com.example.commerce.repositories;
 
-import com.example.Commerce.entities.OrderItemsEntity;
+import com.example.commerce.entities.OrderItemsEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

@@ -1,7 +1,7 @@
-package com.example.Commerce.entities;
+package com.example.commerce.entities;
 
 
-import com.example.Commerce.enums.UserRole;
+import com.example.commerce.enums.UserRole;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

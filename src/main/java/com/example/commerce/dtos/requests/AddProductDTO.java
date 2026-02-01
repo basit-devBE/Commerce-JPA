@@ -1,4 +1,4 @@
-package com.example.Commerce.dtos;
+package com.example.commerce.dtos.requests;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

@@ -1,4 +1,4 @@
-package com.example.Commerce.utils.sorting;
+package com.example.commerce.utils.sorting;
 
 import java.util.ArrayList;
 import java.util.Comparator;

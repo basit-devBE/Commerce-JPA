@@ -1,19 +1,20 @@
-package com.example.Commerce.services;
+package com.example.commerce.services;
 
-import com.example.Commerce.dtos.AddCategoryDTO;
-import com.example.Commerce.dtos.CategoryResponseDTO;
-import com.example.Commerce.dtos.UpdateCategoryDTO;
-import com.example.Commerce.entities.CategoryEntity;
-import com.example.Commerce.mappers.CategoryMapper;
-import com.example.Commerce.repositories.CategoryRepository;
-import com.example.Commerce.errorhandlers.ResourceAlreadyExists;
-import com.example.Commerce.errorhandlers.ResourceNotFoundException;
+import com.example.commerce.dtos.requests.AddCategoryDTO;
+import com.example.commerce.dtos.responses.CategoryResponseDTO;
+import com.example.commerce.dtos.requests.UpdateCategoryDTO;
+import com.example.commerce.entities.CategoryEntity;
+import com.example.commerce.interfaces.ICategoryService;
+import com.example.commerce.mappers.CategoryMapper;
+import com.example.commerce.repositories.CategoryRepository;
+import com.example.commerce.errorhandlers.ResourceAlreadyExists;
+import com.example.commerce.errorhandlers.ResourceNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 @Service
-public class CategoryService {
+public class CategoryService implements ICategoryService {
     private final CategoryRepository categoryRepository;
     private final CategoryMapper categoryMapper;
 
@@ -73,7 +74,7 @@ public class CategoryService {
             categoryRepository.delete(category);
         } catch (Exception ex) {
             if (ex.getMessage() != null && ex.getMessage().contains("foreign key constraint")) {
-                throw new com.example.Commerce.errorhandlers.ConstraintViolationException(
+                throw new com.example.commerce.errorhandlers.ConstraintViolationException(
                     "Cannot delete category. It is being used by one or more products. Please remove or reassign the products first.");
             }
             throw ex;

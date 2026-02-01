@@ -1,7 +1,7 @@
-package com.example.Commerce.graphql;
+package com.example.commerce.graphql;
 
-import com.example.Commerce.dtos.userSummaryDTO;
-import com.example.Commerce.services.UserService;
+import com.example.commerce.dtos.responses.userSummaryDTO;
+import com.example.commerce.services.UserService;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.stereotype.Controller;
 

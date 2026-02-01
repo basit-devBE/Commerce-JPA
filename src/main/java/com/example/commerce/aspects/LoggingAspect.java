@@ -1,4 +1,4 @@
-package com.example.Commerce.aspects;
+package com.example.commerce.aspects;
 
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class LoggingAspect {
 
-    @Pointcut("within(com.example.Commerce.controllers..*)")
+    @Pointcut("within(com.example.commerce.controllers..*)")
     public void controllerLayer() {}
 
     @Before("controllerLayer()")

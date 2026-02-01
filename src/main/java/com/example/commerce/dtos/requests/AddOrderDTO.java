@@ -1,5 +1,6 @@
-package com.example.Commerce.dtos;
+package com.example.commerce.dtos.requests;
 
+import com.example.commerce.dtos.requests.OrderItemDTO;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.Data;

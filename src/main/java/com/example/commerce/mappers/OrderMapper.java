@@ -1,9 +1,9 @@
-package com.example.Commerce.mappers;
+package com.example.commerce.mappers;
 
-import com.example.Commerce.dtos.OrderItemResponseDTO;
-import com.example.Commerce.dtos.OrderResponseDTO;
-import com.example.Commerce.entities.OrderEntity;
-import com.example.Commerce.entities.OrderItemsEntity;
+import com.example.commerce.dtos.responses.OrderItemResponseDTO;
+import com.example.commerce.dtos.responses.OrderResponseDTO;
+import com.example.commerce.entities.OrderEntity;
+import com.example.commerce.entities.OrderItemsEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
