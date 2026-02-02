@@ -14,6 +14,8 @@ import com.example.commerce.repositories.UserRepository;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.mindrot.jbcrypt.BCrypt;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -85,6 +87,8 @@ public class UserService implements IUserService {
             throw new ResourceNotFoundException("User not found with id: " + id);
         }
     }
+
+    @CacheEvict(value = "allUsers", allEntries = true)
     public userSummaryDTO updateUser(Long id, @Valid UpdateUserDTO userDTO){
         UserEntity userEntity = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
@@ -104,6 +108,7 @@ public class UserService implements IUserService {
         return userMapper.toSummaryDTO(updatedUser);
     }
 
+    @Cacheable(value = "allUsers", key = "#pageable.pageNumber + '-' + #pageable.pageSize")
     public Page<userSummaryDTO> getAllUsers(Pageable pageable){
       return userRepository.findAll(pageable).map(userMapper::toSummaryDTO);
     }

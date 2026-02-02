@@ -48,6 +48,8 @@ export const authAPI = {
 export const productAPI = {
   getAll: (params) => api.get('/products/public/all', { params }),
   getById: (id) => api.get(`/products/${id}`),
+  getByPriceRange: (minPrice, maxPrice, params) => 
+    api.get('/products/public/price-range', { params: { minPrice, maxPrice, ...params } }),
   create: (data) => api.post('/products/add', data),
   update: (id, data) => api.put(`/products/update/${id}`, data),
   delete: (id) => api.delete(`/products/${id}`),
