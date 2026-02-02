@@ -1,8 +1,8 @@
 package com.example.commerce.graphql;
 
 import com.example.commerce.dtos.requests.AddInventoryDTO;
-import com.example.commerce.dtos.responses.InventoryResponseDTO;
 import com.example.commerce.dtos.requests.UpdateInventoryDTO;
+import com.example.commerce.dtos.responses.InventoryResponseDTO;
 import com.example.commerce.services.InventoryService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.graphql.data.method.annotation.Argument;

@@ -1,14 +1,14 @@
 package com.example.commerce.services;
 
 import com.example.commerce.dtos.requests.AddCategoryDTO;
-import com.example.commerce.dtos.responses.CategoryResponseDTO;
 import com.example.commerce.dtos.requests.UpdateCategoryDTO;
+import com.example.commerce.dtos.responses.CategoryResponseDTO;
 import com.example.commerce.entities.CategoryEntity;
+import com.example.commerce.errorhandlers.ResourceAlreadyExists;
+import com.example.commerce.errorhandlers.ResourceNotFoundException;
 import com.example.commerce.interfaces.ICategoryService;
 import com.example.commerce.mappers.CategoryMapper;
 import com.example.commerce.repositories.CategoryRepository;
-import com.example.commerce.errorhandlers.ResourceAlreadyExists;
-import com.example.commerce.errorhandlers.ResourceNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;

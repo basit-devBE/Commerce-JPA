@@ -1,17 +1,17 @@
 package com.example.commerce.services;
 
 import com.example.commerce.dtos.requests.AddProductDTO;
+import com.example.commerce.dtos.requests.UpdateProductDTO;
 import com.example.commerce.dtos.responses.PagedResponse;
 import com.example.commerce.dtos.responses.ProductResponseDTO;
-import com.example.commerce.dtos.requests.UpdateProductDTO;
 import com.example.commerce.entities.CategoryEntity;
 import com.example.commerce.entities.ProductEntity;
+import com.example.commerce.errorhandlers.ResourceAlreadyExists;
+import com.example.commerce.errorhandlers.ResourceNotFoundException;
 import com.example.commerce.interfaces.IProductService;
 import com.example.commerce.mappers.ProductMapper;
 import com.example.commerce.repositories.CategoryRepository;
 import com.example.commerce.repositories.ProductRepository;
-import com.example.commerce.errorhandlers.ResourceAlreadyExists;
-import com.example.commerce.errorhandlers.ResourceNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Example;

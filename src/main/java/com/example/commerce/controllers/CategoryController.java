@@ -8,7 +8,6 @@ import com.example.commerce.dtos.responses.CategoryResponseDTO;
 import com.example.commerce.dtos.responses.PagedResponse;
 import com.example.commerce.enums.UserRole;
 import com.example.commerce.interfaces.ICategoryService;
-import com.example.commerce.services.CategoryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
