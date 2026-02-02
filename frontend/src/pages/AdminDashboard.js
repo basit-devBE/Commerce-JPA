@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { productAPI, categoryAPI, orderAPI, inventoryAPI, userAPI } from '../services/api';
-import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, TrashIcon, MagnifyingGlassIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import ErrorAlert from '../components/ErrorAlert';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('products');
@@ -12,6 +13,7 @@ const AdminDashboard = () => {
   const [dbMetrics, setDbMetrics] = useState({});
   const [cacheMetrics, setCacheMetrics] = useState({});
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [editingOrder, setEditingOrder] = useState(null);
   const [newStatus, setNewStatus] = useState('');
   const [editingInventory, setEditingInventory] = useState(null);
@@ -24,25 +26,117 @@ const AdminDashboard = () => {
   const [newProduct, setNewProduct] = useState({ name: '', categoryId: '', price: '', sku: '', description: '' });
   const [newCategory, setNewCategory] = useState({ name: '', description: '' });
   const [newInventory, setNewInventory] = useState({ productId: '', quantity: '', location: '' });
+  
+  // Pagination state
+  const [pagination, setPagination] = useState({
+    products: { page: 0, size: 10, totalPages: 0, totalElements: 0 },
+    categories: { page: 0, size: 10, totalPages: 0, totalElements: 0 },
+    orders: { page: 0, size: 10, totalPages: 0, totalElements: 0 },
+    inventory: { page: 0, size: 10, totalPages: 0, totalElements: 0 },
+    users: { page: 0, size: 10, totalPages: 0, totalElements: 0 }
+  });
+  
+  // Filter state
+  const [filters, setFilters] = useState({
+    products: { search: '', category: '' },
+    categories: { search: '' },
+    orders: { search: '', status: '' },
+    inventory: { search: '', lowStock: false },
+    users: { search: '', role: '' }
+  });
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       if (activeTab === 'products') {
-        const response = await productAPI.getAll({ page: 0, size: 100 });
+        const currentPagination = pagination.products;
+        const currentFilters = filters.products;
+        const response = await productAPI.getAll({ 
+          page: currentPagination.page, 
+          size: currentPagination.size,
+          search: currentFilters.search,
+          category: currentFilters.category
+        });
         setProducts(response.data.data.content);
+        setPagination(prev => ({
+          ...prev,
+          products: {
+            ...prev.products,
+            totalPages: response.data.data.totalPages,
+            totalElements: response.data.data.totalElements
+          }
+        }));
       } else if (activeTab === 'categories') {
-        const response = await categoryAPI.getAll({ page: 0, size: 100 });
+        const currentPagination = pagination.categories;
+        const currentFilters = filters.categories;
+        const response = await categoryAPI.getAll({ 
+          page: currentPagination.page, 
+          size: currentPagination.size,
+          search: currentFilters.search
+        });
         setCategories(response.data.data.content);
+        setPagination(prev => ({
+          ...prev,
+          categories: {
+            ...prev.categories,
+            totalPages: response.data.data.totalPages,
+            totalElements: response.data.data.totalElements
+          }
+        }));
       } else if (activeTab === 'orders') {
-        const response = await orderAPI.getAll({ page: 0, size: 100 });
+        const currentPagination = pagination.orders;
+        const currentFilters = filters.orders;
+        const response = await orderAPI.getAll({ 
+          page: currentPagination.page, 
+          size: currentPagination.size,
+          search: currentFilters.search,
+          status: currentFilters.status
+        });
         setOrders(response.data.data.content);
+        setPagination(prev => ({
+          ...prev,
+          orders: {
+            ...prev.orders,
+            totalPages: response.data.data.totalPages,
+            totalElements: response.data.data.totalElements
+          }
+        }));
       } else if (activeTab === 'inventory') {
-        const response = await inventoryAPI.getAll({ page: 0, size: 100 });
+        const currentPagination = pagination.inventory;
+        const currentFilters = filters.inventory;
+        const response = await inventoryAPI.getAll({ 
+          page: currentPagination.page, 
+          size: currentPagination.size,
+          search: currentFilters.search,
+          lowStock: currentFilters.lowStock
+        });
         setInventory(response.data.data.content);
+        setPagination(prev => ({
+          ...prev,
+          inventory: {
+            ...prev.inventory,
+            totalPages: response.data.data.totalPages,
+            totalElements: response.data.data.totalElements
+          }
+        }));
       } else if (activeTab === 'users') {
-        const response = await userAPI.getAll({ page: 0, size: 100 });
+        const currentPagination = pagination.users;
+        const currentFilters = filters.users;
+        const response = await userAPI.getAll({ 
+          page: currentPagination.page, 
+          size: currentPagination.size,
+          search: currentFilters.search,
+          role: currentFilters.role
+        });
         setUsers(response.data.data.content);
+        setPagination(prev => ({
+          ...prev,
+          users: {
+            ...prev.users,
+            totalPages: response.data.data.totalPages,
+            totalElements: response.data.data.totalElements
+          }
+        }));
       } else if (activeTab === 'performance') {
         const [dbRes, cacheRes] = await Promise.all([
           fetch('http://localhost:8080/api/performance/db-metrics', {
@@ -57,12 +151,13 @@ const AdminDashboard = () => {
         setDbMetrics(dbData.data || {});
         setCacheMetrics(cacheData.data || {});
       }
-    } catch (error) {
-      console.error('Error fetching data:', error);
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      setError(err);
     } finally {
       setLoading(false);
     }
-  }, [activeTab]);
+  }, [activeTab, pagination, filters]);
 
   // Fetch categories and products on mount for dropdowns
   useEffect(() => {
@@ -90,10 +185,11 @@ const AdminDashboard = () => {
       await orderAPI.updateStatus(orderId, { status });
       setEditingOrder(null);
       setNewStatus('');
+      setError(null);
       fetchData(); // Refresh orders
-    } catch (error) {
-      console.error('Error updating order status:', error);
-      alert('Failed to update order status');
+    } catch (err) {
+      console.error('Error updating order status:', err);
+      setError(err);
     }
   };
 
@@ -102,10 +198,11 @@ const AdminDashboard = () => {
       await inventoryAPI.update(inventoryId, { quantity: parseInt(quantity) });
       setEditingInventory(null);
       setNewQuantity('');
+      setError(null);
       fetchData(); // Refresh inventory
-    } catch (error) {
-      console.error('Error updating inventory:', error);
-      alert('Failed to update inventory quantity');
+    } catch (err) {
+      console.error('Error updating inventory:', err);
+      setError(err);
     }
   };
 
@@ -114,10 +211,11 @@ const AdminDashboard = () => {
       await userAPI.update(userId, data);
       setEditingUser(null);
       setNewUserData({});
+      setError(null);
       fetchData(); // Refresh users
-    } catch (error) {
-      console.error('Error updating user:', error);
-      alert('Failed to update user');
+    } catch (err) {
+      console.error('Error updating user:', err);
+      setError(err);
     }
   };
 
@@ -127,10 +225,11 @@ const AdminDashboard = () => {
     }
     try {
       await userAPI.delete(userId);
+      setError(null);
       fetchData(); // Refresh users
-    } catch (error) {
-      console.error('Error deleting user:', error);
-      alert('Failed to delete user');
+    } catch (err) {
+      console.error('Error deleting user:', err);
+      setError(err);
     }
   };
 
@@ -140,10 +239,11 @@ const AdminDashboard = () => {
       await productAPI.create(newProduct);
       setShowAddProductModal(false);
       setNewProduct({ name: '', categoryId: '', price: '', sku: '', description: '' });
+      setError(null);
       fetchData();
-    } catch (error) {
-      console.error('Error adding product:', error);
-      alert('Failed to add product');
+    } catch (err) {
+      console.error('Error adding product:', err);
+      setError(err);
     }
   };
 
@@ -153,10 +253,11 @@ const AdminDashboard = () => {
       await categoryAPI.create(newCategory);
       setShowAddCategoryModal(false);
       setNewCategory({ name: '', description: '' });
+      setError(null);
       fetchData();
-    } catch (error) {
-      console.error('Error adding category:', error);
-      alert('Failed to add category');
+    } catch (err) {
+      console.error('Error adding category:', err);
+      setError(err);
     }
   };
 
@@ -166,10 +267,11 @@ const AdminDashboard = () => {
       await inventoryAPI.create(newInventory);
       setShowAddInventoryModal(false);
       setNewInventory({ productId: '', quantity: '', location: '' });
+      setError(null);
       fetchData();
-    } catch (error) {
-      console.error('Error adding inventory:', error);
-      alert('Failed to add inventory');
+    } catch (err) {
+      console.error('Error adding inventory:', err);
+      setError(err);
     }
   };
 
@@ -182,6 +284,93 @@ const AdminDashboard = () => {
     { id: 'performance', name: 'Performance' },
   ];
 
+  const handlePageChange = (tab, newPage) => {
+    setPagination(prev => ({
+      ...prev,
+      [tab]: { ...prev[tab], page: newPage }
+    }));
+  };
+
+  const handleFilterChange = (tab, filterName, value) => {
+    setFilters(prev => ({
+      ...prev,
+      [tab]: { ...prev[tab], [filterName]: value }
+    }));
+    // Reset to first page when filter changes
+    setPagination(prev => ({
+      ...prev,
+      [tab]: { ...prev[tab], page: 0 }
+    }));
+  };
+
+  const renderPagination = (tab) => {
+    const currentPagination = pagination[tab];
+    if (currentPagination.totalPages <= 1) return null;
+
+    return (
+      <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
+        <div className="flex-1 flex justify-between sm:hidden">
+          <button
+            onClick={() => handlePageChange(tab, currentPagination.page - 1)}
+            disabled={currentPagination.page === 0}
+            className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Previous
+          </button>
+          <button
+            onClick={() => handlePageChange(tab, currentPagination.page + 1)}
+            disabled={currentPagination.page >= currentPagination.totalPages - 1}
+            className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Next
+          </button>
+        </div>
+        <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm text-gray-700">
+              Showing <span className="font-medium">{currentPagination.page * currentPagination.size + 1}</span> to{' '}
+              <span className="font-medium">
+                {Math.min((currentPagination.page + 1) * currentPagination.size, currentPagination.totalElements)}
+              </span> of{' '}
+              <span className="font-medium">{currentPagination.totalElements}</span> results
+            </p>
+          </div>
+          <div>
+            <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+              <button
+                onClick={() => handlePageChange(tab, currentPagination.page - 1)}
+                disabled={currentPagination.page === 0}
+                className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronLeftIcon className="h-5 w-5" />
+              </button>
+              {[...Array(currentPagination.totalPages)].map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handlePageChange(tab, idx)}
+                  className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                    currentPagination.page === idx
+                      ? 'z-10 bg-primary-50 border-primary-500 text-primary-600'
+                      : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                  }`}
+                >
+                  {idx + 1}
+                </button>
+              ))}
+              <button
+                onClick={() => handlePageChange(tab, currentPagination.page + 1)}
+                disabled={currentPagination.page >= currentPagination.totalPages - 1}
+                className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronRightIcon className="h-5 w-5" />
+              </button>
+            </nav>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -189,6 +378,9 @@ const AdminDashboard = () => {
           <h1 className="text-4xl font-bold text-gray-900 mb-4">Admin Dashboard</h1>
           <p className="text-gray-600">Manage your e-commerce store</p>
         </div>
+
+        {/* Error Alert */}
+        <ErrorAlert error={error} onDismiss={() => setError(null)} />
 
         {/* Tabs */}
         <div className="bg-white rounded-xl shadow-sm mb-6">
@@ -231,6 +423,31 @@ const AdminDashboard = () => {
                         Add Product
                       </button>
                     </div>
+
+                    {/* Filters */}
+                    <div className="mb-4 flex gap-4">
+                      <div className="flex-1 relative">
+                        <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                        <input
+                          type="text"
+                          placeholder="Search products..."
+                          value={filters.products.search}
+                          onChange={(e) => handleFilterChange('products', 'search', e.target.value)}
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        />
+                      </div>
+                      <select
+                        value={filters.products.category}
+                        onChange={(e) => handleFilterChange('products', 'category', e.target.value)}
+                        className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      >
+                        <option value="">All Categories</option>
+                        {categories.map((cat) => (
+                          <option key={cat.id} value={cat.id}>{cat.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
                     <div className="overflow-x-auto">
                       <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
@@ -276,6 +493,7 @@ const AdminDashboard = () => {
                         </tbody>
                       </table>
                     </div>
+                    {renderPagination('products')}
                   </div>
                 )}
 
@@ -292,6 +510,21 @@ const AdminDashboard = () => {
                         Add Category
                       </button>
                     </div>
+
+                    {/* Filters */}
+                    <div className="mb-4">
+                      <div className="relative">
+                        <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                        <input
+                          type="text"
+                          placeholder="Search categories..."
+                          value={filters.categories.search}
+                          onChange={(e) => handleFilterChange('categories', 'search', e.target.value)}
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        />
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {categories.map((category) => (
                         <div key={category.id} className="bg-gray-50 rounded-lg p-4">
@@ -310,6 +543,7 @@ const AdminDashboard = () => {
                         </div>
                       ))}
                     </div>
+                    {renderPagination('categories')}
                   </div>
                 )}
 
@@ -326,6 +560,30 @@ const AdminDashboard = () => {
                         Add Inventory
                       </button>
                     </div>
+
+                    {/* Filters */}
+                    <div className="mb-4 flex gap-4">
+                      <div className="flex-1 relative">
+                        <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                        <input
+                          type="text"
+                          placeholder="Search inventory..."
+                          value={filters.inventory.search}
+                          onChange={(e) => handleFilterChange('inventory', 'search', e.target.value)}
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        />
+                      </div>
+                      <label className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                        <input
+                          type="checkbox"
+                          checked={filters.inventory.lowStock}
+                          onChange={(e) => handleFilterChange('inventory', 'lowStock', e.target.checked)}
+                          className="rounded text-primary-600 focus:ring-primary-500"
+                        />
+                        <span className="text-sm text-gray-700">Low Stock Only</span>
+                      </label>
+                    </div>
+
                     <div className="overflow-x-auto">
                       <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
@@ -412,6 +670,7 @@ const AdminDashboard = () => {
                         </tbody>
                       </table>
                     </div>
+                    {renderPagination('inventory')}
                   </div>
                 )}
 
@@ -419,6 +678,33 @@ const AdminDashboard = () => {
                 {activeTab === 'orders' && (
                   <div>
                     <h2 className="text-xl font-semibold text-gray-900 mb-6">Orders Management</h2>
+
+                    {/* Filters */}
+                    <div className="mb-4 flex gap-4">
+                      <div className="flex-1 relative">
+                        <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                        <input
+                          type="text"
+                          placeholder="Search orders..."
+                          value={filters.orders.search}
+                          onChange={(e) => handleFilterChange('orders', 'search', e.target.value)}
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        />
+                      </div>
+                      <select
+                        value={filters.orders.status}
+                        onChange={(e) => handleFilterChange('orders', 'status', e.target.value)}
+                        className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      >
+                        <option value="">All Statuses</option>
+                        <option value="PENDING">PENDING</option>
+                        <option value="PROCESSING">PROCESSING</option>
+                        <option value="SHIPPED">SHIPPED</option>
+                        <option value="DELIVERED">DELIVERED</option>
+                        <option value="CANCELLED">CANCELLED</option>
+                      </select>
+                    </div>
+
                     <div className="overflow-x-auto">
                       <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
@@ -507,6 +793,7 @@ const AdminDashboard = () => {
                         </tbody>
                       </table>
                     </div>
+                    {renderPagination('orders')}
                   </div>
                 )}
 
@@ -514,6 +801,30 @@ const AdminDashboard = () => {
                 {activeTab === 'users' && (
                   <div>
                     <h2 className="text-xl font-semibold text-gray-900 mb-6">User Management</h2>
+
+                    {/* Filters */}
+                    <div className="mb-4 flex gap-4">
+                      <div className="flex-1 relative">
+                        <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                        <input
+                          type="text"
+                          placeholder="Search users..."
+                          value={filters.users.search}
+                          onChange={(e) => handleFilterChange('users', 'search', e.target.value)}
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        />
+                      </div>
+                      <select
+                        value={filters.users.role}
+                        onChange={(e) => handleFilterChange('users', 'role', e.target.value)}
+                        className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      >
+                        <option value="">All Roles</option>
+                        <option value="CUSTOMER">CUSTOMER</option>
+                        <option value="ADMIN">ADMIN</option>
+                      </select>
+                    </div>
+
                     <div className="overflow-x-auto">
                       <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
@@ -619,6 +930,7 @@ const AdminDashboard = () => {
                         </tbody>
                       </table>
                     </div>
+                    {renderPagination('users')}
                   </div>
                 )}
 

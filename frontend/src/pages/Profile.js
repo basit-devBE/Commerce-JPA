@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { authAPI } from '../services/api';
 import { UserCircleIcon } from '@heroicons/react/24/outline';
+import ErrorAlert from '../components/ErrorAlert';
 
 const Profile = () => {
   const { user, logout } = useAuth();
@@ -12,7 +13,8 @@ const Profile = () => {
   });
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState({ type: '', text: '' });
+  const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -34,21 +36,19 @@ const Profile = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setMessage({ type: '', text: '' });
+    setError(null);
+    setSuccessMessage('');
 
     try {
       await authAPI.updateProfile(formData);
-      setMessage({ type: 'success', text: 'Profile updated successfully!' });
+      setSuccessMessage('Profile updated successfully!');
       setEditing(false);
       
       // Update user in localStorage
       const updatedUser = { ...user, ...formData };
       localStorage.setItem('user', JSON.stringify(updatedUser));
     } catch (err) {
-      setMessage({ 
-        type: 'error', 
-        text: err.response?.data?.message || 'Failed to update profile' 
-      });
+      setError(err);
     } finally {
       setLoading(false);
     }
@@ -61,7 +61,8 @@ const Profile = () => {
       email: user.email || '',
     });
     setEditing(false);
-    setMessage({ type: '', text: '' });
+    setError(null);
+    setSuccessMessage('');
   };
 
   return (
@@ -88,13 +89,11 @@ const Profile = () => {
 
           {/* Profile Form */}
           <div className="p-8">
-            {message.text && (
-              <div className={`mb-6 p-4 rounded-lg ${
-                message.type === 'success' 
-                  ? 'bg-green-50 border-l-4 border-green-500 text-green-700'
-                  : 'bg-red-50 border-l-4 border-red-500 text-red-700'
-              }`}>
-                {message.text}
+            <ErrorAlert error={error} onDismiss={() => setError(null)} />
+            
+            {successMessage && (
+              <div className="mb-6 p-4 rounded-lg bg-green-50 border-l-4 border-green-500 text-green-700">
+                {successMessage}
               </div>
             )}
 

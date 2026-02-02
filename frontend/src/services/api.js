@@ -27,6 +27,16 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Log detailed error information for debugging
+    if (error.response?.data) {
+      console.error('API Error:', {
+        message: error.response.data.message,
+        status: error.response.data.status,
+        path: error.response.data.path,
+        timestamp: error.response.data.timestamp,
+      });
+    }
+    
     if (error.response?.status === 401) {
       localStorage.removeItem('authToken');
       localStorage.removeItem('user');
