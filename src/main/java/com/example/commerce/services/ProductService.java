@@ -56,7 +56,6 @@ public class ProductService implements IProductService {
         return response;
     }
 
-    @Cacheable(value = "products", key = "#pageable.pageNumber + '-' + #pageable.pageSize + '-' + #pageable.sort.toString()")
     public PagedResponse<ProductResponseDTO> getAllProducts(Pageable pageable){
         log.info("Fetching all products from the db");
         Page<ProductResponseDTO> page = productRepository.findAll(pageable)
@@ -76,7 +75,6 @@ public class ProductService implements IProductService {
         );
     }
         
-    @Cacheable(value = "productsByCategory", key = "#categoryId + '-' + #pageable.pageNumber + '-' + #pageable.pageSize")
     public PagedResponse<ProductResponseDTO> getProductsByCategory(Long categoryId, Pageable pageable){
         // Validate category exists
         categoryRepository.findById(categoryId)
@@ -198,7 +196,6 @@ public class ProductService implements IProductService {
                 .ifPresent(inventory -> response.setQuantity(inventory.getQuantity()));
         return response;
     }
-    @Cacheable(value = "productsByPriceRange", key = "#minPrice + '-' + #maxPrice + '-' + #pageable.pageNumber + '-' + #pageable.pageSize")
     public PagedResponse<ProductResponseDTO> getProductsByPriceBetween(Double minPrice, Double maxPrice, Pageable pageable){
         Page<ProductResponseDTO> page = productRepository.findByPriceBetween(minPrice, maxPrice, pageable)
                 .map(product -> {

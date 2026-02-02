@@ -11,6 +11,8 @@ import com.example.commerce.errorhandlers.ResourceNotFoundException;
 import com.example.commerce.interfaces.IOrderService;
 import com.example.commerce.mappers.OrderMapper;
 import com.example.commerce.repositories.*;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -43,6 +45,7 @@ public class OrderService implements IOrderService {
         this.orderMapper = orderMapper;
     }
 
+    @CacheEvict(value = {"orderById", "inventoryById", "inventoryByProductId"}, allEntries = true)
     @Transactional
     public OrderResponseDTO createOrder(AddOrderDTO addOrderDTO) {
         // Validate user exists
@@ -122,6 +125,7 @@ public class OrderService implements IOrderService {
         });
     }
 
+    @Cacheable(value = "orderById", key = "#id")
     public OrderResponseDTO getOrderById(Long id) {
         OrderEntity order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + id));
@@ -129,6 +133,7 @@ public class OrderService implements IOrderService {
         return buildOrderResponse(order, items);
     }
 
+    @CacheEvict(value = "orderById", key = "#id")
     @Transactional
     public OrderResponseDTO updateOrderStatus(Long id, UpdateOrderDTO updateOrderDTO) {
         OrderEntity order = orderRepository.findById(id)
@@ -144,6 +149,7 @@ public class OrderService implements IOrderService {
         return buildOrderResponse(updatedOrder, items);
     }
 
+    @CacheEvict(value = "orderById", key = "#id")
     @Transactional
     public void deleteOrder(Long id) {
         OrderEntity order = orderRepository.findById(id)
