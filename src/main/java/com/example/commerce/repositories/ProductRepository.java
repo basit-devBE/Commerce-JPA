@@ -11,4 +11,6 @@ import org.springframework.stereotype.Repository;
 public interface ProductRepository extends JpaRepository<ProductEntity, Long> {
     boolean existsByNameIgnoreCase(@NotBlank(message = "Product name is required") String name);
     Page<ProductEntity> findByCategoryId(Long categoryId, Pageable pageable);
+
+    Page<ProductEntity> findByPriceBetween(Double minPrice, Double maxPrice, Pageable pageable);
 }

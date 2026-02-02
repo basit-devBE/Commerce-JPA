@@ -23,7 +23,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-@Tag(name = "User Management", description = "APIs for managing users")
+@Tag(name = "User Management")
 @RestController
 @RequestMapping("/api/users")
 public class UserController {

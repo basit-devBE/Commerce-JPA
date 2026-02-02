@@ -24,4 +24,6 @@ public interface IProductService {
     void deleteProduct(Long id);
 
     ProductResponseDTO getProductByName(String name);
+
+    PagedResponse<ProductResponseDTO> getProductsByPriceBetween (Double minPrice, Double maxPrice, Pageable pageable);
 }

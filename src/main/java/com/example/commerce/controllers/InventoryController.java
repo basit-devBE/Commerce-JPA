@@ -17,7 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-@Tag(name = "Inventory Management", description = "APIs for managing product inventory")
+@Tag(name = "Inventory Management")
 @RestController
 @RequestMapping("/api/inventory")
 public class InventoryController {

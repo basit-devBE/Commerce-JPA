@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
-@Tag(name = "Performance Monitoring", description = "APIs for monitoring database performance")
+@Tag(name = "Performance Monitoring")
 @RestController
 @RequestMapping("/api/performance")
 public class PerformanceController {
@@ -26,7 +26,7 @@ public class PerformanceController {
         this.performanceAspect = performanceAspect;
     }
 
-    @Operation(summary = "Get database fetch times", description = "Retrieves all recorded database query execution times. Requires ADMIN role.")
+    @Operation(summary = "Get database fetch times")
     @RequiresRole(UserRole.ADMIN)
     @GetMapping("/db-metrics")
     public ResponseEntity<ApiResponse<Map<String, Map<String, Object>>>> getDbMetrics() {
@@ -35,7 +35,7 @@ public class PerformanceController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "Get cache metrics", description = "Retrieves cache hit/miss statistics. Requires ADMIN role.")
+    @Operation(summary = "Get cache metrics")
     @RequiresRole(UserRole.ADMIN)
     @GetMapping("/cache-metrics")
     public ResponseEntity<ApiResponse<Map<String, Map<String, Object>>>> getCacheMetrics() {
@@ -44,7 +44,7 @@ public class PerformanceController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "Clear performance metrics", description = "Clears all recorded performance metrics. Requires ADMIN role.")
+    @Operation(summary = "Clear performance metrics")
     @RequiresRole(UserRole.ADMIN)
     @DeleteMapping("/clear-metrics")
     public ResponseEntity<ApiResponse<Void>> clearMetrics() {

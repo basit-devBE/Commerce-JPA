@@ -4,14 +4,13 @@ package com.example.commerce.controllers;
 import com.example.commerce.config.RequiresRole;
 import com.example.commerce.dtos.requests.AddProductDTO;
 import com.example.commerce.dtos.requests.UpdateProductDTO;
-import com.example.commerce.dtos.responses.*;
+import com.example.commerce.dtos.responses.ApiResponse;
+import com.example.commerce.dtos.responses.PagedResponse;
+import com.example.commerce.dtos.responses.ProductResponseDTO;
 import com.example.commerce.enums.UserRole;
 import com.example.commerce.interfaces.IProductService;
 import com.example.commerce.utils.sorting.SortingService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Pageable;
@@ -21,7 +20,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@Tag(name = "Product Management", description = "APIs for managing products")
+@Tag(name = "Product Management")
 @RestController
 @RequestMapping("/api/products")
 public class ProductController {
@@ -33,20 +32,7 @@ public class ProductController {
         this.sortingService = sortingService;
     }
 
-    @Operation(summary = "Add a new product", description = "Creates a new product. Requires ADMIN role.")
-    @ApiResponses(value = {
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Product created successfully"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Validation error", 
-            content = @Content(schema = @Schema(implementation = ValidationErrorResponse.class))),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing token", 
-            content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Forbidden - User does not have required role", 
-            content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "Conflict - Product already exists", 
-            content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Internal server error", 
-            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
-    })
+    @Operation(summary = "Add a new product")
     @RequiresRole(UserRole.ADMIN)
     @PostMapping("/add")
     public ResponseEntity<ApiResponse<ProductResponseDTO>> addProduct(@Valid @RequestBody AddProductDTO request){
@@ -55,14 +41,7 @@ public class ProductController {
         return ResponseEntity.ok(apiResponse);
     }
 
-    @Operation(summary = "Get all products", description = "Retrieves a paginated list of all products. Optionally filter by category.")
-    @ApiResponses(value = {
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Products retrieved successfully"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Category not found", 
-            content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Internal server error", 
-            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
-    })
+    @Operation(summary = "Get all products")
     @GetMapping("/public/all")
     public ResponseEntity<ApiResponse<PagedResponse<ProductResponseDTO>>> getAllProducts(
             @RequestParam(value = "page", defaultValue = "0") int page,
@@ -105,14 +84,7 @@ public class ProductController {
         return ResponseEntity.ok(apiResponse);
     }
 
-    @Operation(summary = "Get product by ID", description = "Retrieves a specific product by its ID")
-    @ApiResponses(value = {
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Product found"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Product not found", 
-            content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Internal server error", 
-            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
-    })
+    @Operation(summary = "Get product by ID")
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<ProductResponseDTO>> getProductById(@PathVariable Long id){
         ProductResponseDTO product = productService.getProductById(id);
@@ -120,20 +92,7 @@ public class ProductController {
         return ResponseEntity.ok(apiResponse);
     }
 
-    @Operation(summary = "Update a product", description = "Updates an existing product. Requires ADMIN role.")
-    @ApiResponses(value = {
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Product updated successfully"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Validation error", 
-            content = @Content(schema = @Schema(implementation = ValidationErrorResponse.class))),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized", 
-            content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Forbidden - User does not have required role", 
-            content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Product not found", 
-            content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Internal server error", 
-            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
-    })
+    @Operation(summary = "Update a product")
     @RequiresRole(UserRole.ADMIN)
     @PutMapping("/update/{id}")
     public ResponseEntity<ApiResponse<ProductResponseDTO>> updateProduct(
@@ -153,10 +112,24 @@ public class ProductController {
         return ResponseEntity.ok(apiResponse);
     }
 
+    @Operation(summary = "Search product by name")
     @GetMapping("/public/search/{name} ")
     public ResponseEntity<ApiResponse<ProductResponseDTO>> getProductByName(@PathVariable String name){
         ProductResponseDTO product = productService.getProductByName(name);
         ApiResponse<ProductResponseDTO> apiResponse = new ApiResponse<>(HttpStatus.OK.value(), "Product fetched successfully", product);
+        return ResponseEntity.ok(apiResponse);
+    }
+
+    @GetMapping("/public/price-range")
+    public  ResponseEntity<ApiResponse<PagedResponse<ProductResponseDTO>>> findProductByPriceRange(
+            @RequestParam Double minPrice,
+            @RequestParam Double maxPrice,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size
+    ){
+        Pageable pageable = Pageable.ofSize(size).withPage(page);
+        PagedResponse<ProductResponseDTO> pagedResponse = productService.getProductsByPriceBetween(minPrice, maxPrice, pageable);
+        ApiResponse<PagedResponse<ProductResponseDTO>> apiResponse = new ApiResponse<>(HttpStatus.OK.value(), "Products fetched successfully", pagedResponse);
         return ResponseEntity.ok(apiResponse);
     }
 }

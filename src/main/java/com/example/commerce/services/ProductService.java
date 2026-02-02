@@ -198,5 +198,24 @@ public class ProductService implements IProductService {
                 .ifPresent(inventory -> response.setQuantity(inventory.getQuantity()));
         return response;
     }
+    @Cacheable(value = "productsByPriceRange", key = "#minPrice + '-' + #maxPrice + '-' + #pageable.pageNumber + '-' + #pageable.pageSize")
+    public PagedResponse<ProductResponseDTO> getProductsByPriceBetween(Double minPrice, Double maxPrice, Pageable pageable){
+        Page<ProductResponseDTO> page = productRepository.findByPriceBetween(minPrice, maxPrice, pageable)
+                .map(product -> {
+                    ProductResponseDTO response = productMapper.toResponseDTO(product);
+                    // Set quantity from inventory if exists
+                    inventoryRepository.findByProductId(product.getId())
+                            .ifPresent(inventory -> response.setQuantity(inventory.getQuantity()));
+                    return response;
+                });
+
+        return new PagedResponse<>(
+            page.getContent(),
+            page.getNumber(),
+            (int) page.getTotalElements(),
+            page.getTotalPages(),
+            page.isLast()
+        );
+    }
 }
 
