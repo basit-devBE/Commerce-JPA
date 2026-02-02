@@ -134,7 +134,6 @@ public class OrderService implements IOrderService {
     }
 
     @CacheEvict(value = "orderById", key = "#id")
-    @Transactional
     public OrderResponseDTO updateOrderStatus(Long id, UpdateOrderDTO updateOrderDTO) {
         OrderEntity order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + id));
