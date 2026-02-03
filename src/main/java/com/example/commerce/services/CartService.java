@@ -2,7 +2,6 @@ package com.example.commerce.services;
 
 import com.example.commerce.dtos.requests.AddToCartDTO;
 import com.example.commerce.dtos.requests.UpdateCartItemDTO;
-import com.example.commerce.dtos.responses.CartItemResponseDTO;
 import com.example.commerce.dtos.responses.CartResponseDTO;
 import com.example.commerce.entities.CartEntity;
 import com.example.commerce.entities.CartItemEntity;
