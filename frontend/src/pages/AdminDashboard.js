@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { productAPI, categoryAPI, orderAPI, inventoryAPI, userAPI } from '../services/api';
 import { PlusIcon, PencilIcon, TrashIcon, MagnifyingGlassIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import ErrorAlert from '../components/ErrorAlert';
@@ -27,52 +27,169 @@ const AdminDashboard = () => {
   const [newCategory, setNewCategory] = useState({ name: '', description: '' });
   const [newInventory, setNewInventory] = useState({ productId: '', quantity: '', location: '' });
   
+  // Dropdown options (separate from tab data to prevent overwrites)
+  const [categoryOptions, setCategoryOptions] = useState([]);
+  const [productOptions, setProductOptions] = useState([]);
+  
   // Pagination state
   const [pagination, setPagination] = useState({
-    products: { page: 0, size: 10, totalPages: 0, totalElements: 0 },
-    categories: { page: 0, size: 10, totalPages: 0, totalElements: 0 },
-    orders: { page: 0, size: 10, totalPages: 0, totalElements: 0 },
-    inventory: { page: 0, size: 10, totalPages: 0, totalElements: 0 },
-    users: { page: 0, size: 10, totalPages: 0, totalElements: 0 }
+    products: { page: 0, size: 10, totalPages: 0, totalItems: 0 },
+    categories: { page: 0, size: 10, totalPages: 0, totalItems: 0 },
+    orders: { page: 0, size: 10, totalPages: 0, totalItems: 0 },
+    inventory: { page: 0, size: 10, totalPages: 0, totalItems: 0 },
+    users: { page: 0, size: 10, totalPages: 0, totalItems: 0 }
   });
   
-  // Filter state
-  const [filters, setFilters] = useState({
-    products: { search: '', category: '' },
-    categories: { search: '' },
-    orders: { search: '', status: '' },
-    inventory: { search: '', lowStock: false },
-    users: { search: '', role: '' }
-  });
+  // Search state - for client-side filtering (like Products.js)
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Filter state - for API-level filtering (dropdowns only)
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('');
+  const [selectedRole, setSelectedRole] = useState('');
+  const [lowStockOnly, setLowStockOnly] = useState(false);
 
-  const fetchData = useCallback(async () => {
+  // Main data fetching effect - only depends on activeTab, pagination, and dropdown filters
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      setSearchQuery(''); // Reset search when switching tabs or filters
+      try {
+        if (activeTab === 'products') {
+          const params = { 
+            page: pagination.products.page, 
+            size: pagination.products.size
+          };
+          if (selectedCategory) {
+            params.categoryId = selectedCategory;
+          }
+          const response = await productAPI.getAll(params);
+          setProducts(response.data.data.content);
+          setPagination(prev => ({
+            ...prev,
+            products: {
+              ...prev.products,
+              totalPages: response.data.data.totalPages,
+              totalItems: response.data.data.totalItems
+            }
+          }));
+        } else if (activeTab === 'categories') {
+          const response = await categoryAPI.getAll({ 
+            page: pagination.categories.page, 
+            size: pagination.categories.size
+          });
+          setCategories(response.data.data.content);
+          setPagination(prev => ({
+            ...prev,
+            categories: {
+              ...prev.categories,
+              totalPages: response.data.data.totalPages,
+              totalItems: response.data.data.totalItems
+            }
+          }));
+        } else if (activeTab === 'orders') {
+          const params = { 
+            page: pagination.orders.page, 
+            size: pagination.orders.size
+          };
+          if (selectedStatus) {
+            params.status = selectedStatus;
+          }
+          const response = await orderAPI.getAll(params);
+          setOrders(response.data.data.content);
+          setPagination(prev => ({
+            ...prev,
+            orders: {
+              ...prev.orders,
+              totalPages: response.data.data.totalPages,
+              totalItems: response.data.data.totalItems
+            }
+          }));
+        } else if (activeTab === 'inventory') {
+          const params = { 
+            page: pagination.inventory.page, 
+            size: pagination.inventory.size
+          };
+          if (lowStockOnly) {
+            params.lowStock = true;
+          }
+          const response = await inventoryAPI.getAll(params);
+          setInventory(response.data.data.content);
+          setPagination(prev => ({
+            ...prev,
+            inventory: {
+              ...prev.inventory,
+              totalPages: response.data.data.totalPages,
+              totalItems: response.data.data.totalItems
+            }
+          }));
+        } else if (activeTab === 'users') {
+          const params = { 
+            page: pagination.users.page, 
+            size: pagination.users.size
+          };
+          const response = await userAPI.getAll(params);
+          setUsers(response.data.data.content);
+          setPagination(prev => ({
+            ...prev,
+            users: {
+              ...prev.users,
+              totalPages: response.data.data.totalPages,
+              totalItems: response.data.data.totalItems
+            }
+          }));
+        } else if (activeTab === 'performance') {
+          const [dbRes, cacheRes] = await Promise.all([
+            fetch('http://localhost:8080/api/performance/db-metrics', {
+              headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+            }),
+            fetch('http://localhost:8080/api/performance/cache-metrics', {
+              headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+            })
+          ]);
+          const dbData = await dbRes.json();
+          const cacheData = await cacheRes.json();
+          setDbMetrics(dbData.data || {});
+          setCacheMetrics(cacheData.data || {});
+        }
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        setError(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, selectedCategory, selectedStatus, lowStockOnly, pagination.products.page, pagination.categories.page, pagination.orders.page, pagination.inventory.page, pagination.users.page]);
+
+  // Separate function for manual refresh after mutations
+  const refreshCurrentTab = async () => {
     setLoading(true);
     try {
       if (activeTab === 'products') {
-        const currentPagination = pagination.products;
-        const currentFilters = filters.products;
-        const response = await productAPI.getAll({ 
-          page: currentPagination.page, 
-          size: currentPagination.size,
-          search: currentFilters.search,
-          category: currentFilters.category
-        });
+        const params = { 
+          page: pagination.products.page, 
+          size: pagination.products.size
+        };
+        if (selectedCategory) {
+          params.categoryId = selectedCategory;
+        }
+        const response = await productAPI.getAll(params);
         setProducts(response.data.data.content);
         setPagination(prev => ({
           ...prev,
           products: {
             ...prev.products,
             totalPages: response.data.data.totalPages,
-            totalElements: response.data.data.totalElements
+            totalItems: response.data.data.totalItems
           }
         }));
       } else if (activeTab === 'categories') {
-        const currentPagination = pagination.categories;
-        const currentFilters = filters.categories;
         const response = await categoryAPI.getAll({ 
-          page: currentPagination.page, 
-          size: currentPagination.size,
-          search: currentFilters.search
+          page: pagination.categories.page, 
+          size: pagination.categories.size
         });
         setCategories(response.data.data.content);
         setPagination(prev => ({
@@ -80,61 +197,58 @@ const AdminDashboard = () => {
           categories: {
             ...prev.categories,
             totalPages: response.data.data.totalPages,
-            totalElements: response.data.data.totalElements
+            totalItems: response.data.data.totalItems
           }
         }));
       } else if (activeTab === 'orders') {
-        const currentPagination = pagination.orders;
-        const currentFilters = filters.orders;
-        const response = await orderAPI.getAll({ 
-          page: currentPagination.page, 
-          size: currentPagination.size,
-          search: currentFilters.search,
-          status: currentFilters.status
-        });
+        const params = { 
+          page: pagination.orders.page, 
+          size: pagination.orders.size
+        };
+        if (selectedStatus) {
+          params.status = selectedStatus;
+        }
+        const response = await orderAPI.getAll(params);
         setOrders(response.data.data.content);
         setPagination(prev => ({
           ...prev,
           orders: {
             ...prev.orders,
             totalPages: response.data.data.totalPages,
-            totalElements: response.data.data.totalElements
+            totalItems: response.data.data.totalItems
           }
         }));
       } else if (activeTab === 'inventory') {
-        const currentPagination = pagination.inventory;
-        const currentFilters = filters.inventory;
-        const response = await inventoryAPI.getAll({ 
-          page: currentPagination.page, 
-          size: currentPagination.size,
-          search: currentFilters.search,
-          lowStock: currentFilters.lowStock
-        });
+        const params = { 
+          page: pagination.inventory.page, 
+          size: pagination.inventory.size
+        };
+        if (lowStockOnly) {
+          params.lowStock = true;
+        }
+        const response = await inventoryAPI.getAll(params);
         setInventory(response.data.data.content);
         setPagination(prev => ({
           ...prev,
           inventory: {
             ...prev.inventory,
             totalPages: response.data.data.totalPages,
-            totalElements: response.data.data.totalElements
+            totalItems: response.data.data.totalItems
           }
         }));
       } else if (activeTab === 'users') {
-        const currentPagination = pagination.users;
-        const currentFilters = filters.users;
-        const response = await userAPI.getAll({ 
-          page: currentPagination.page, 
-          size: currentPagination.size,
-          search: currentFilters.search,
-          role: currentFilters.role
-        });
+        const params = { 
+          page: pagination.users.page, 
+          size: pagination.users.size
+        };
+        const response = await userAPI.getAll(params);
         setUsers(response.data.data.content);
         setPagination(prev => ({
           ...prev,
           users: {
             ...prev.users,
             totalPages: response.data.data.totalPages,
-            totalElements: response.data.data.totalElements
+            totalItems: response.data.data.totalItems
           }
         }));
       } else if (activeTab === 'performance') {
@@ -157,7 +271,7 @@ const AdminDashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [activeTab, pagination, filters]);
+  };
 
   // Fetch categories and products on mount for dropdowns
   useEffect(() => {
@@ -167,8 +281,8 @@ const AdminDashboard = () => {
           categoryAPI.getAll({ page: 0, size: 100 }),
           productAPI.getAll({ page: 0, size: 100 })
         ]);
-        setCategories(categoriesRes.data.data.content);
-        setProducts(productsRes.data.data.content);
+        setCategoryOptions(categoriesRes.data.data.content);
+        setProductOptions(productsRes.data.data.content);
       } catch (error) {
         console.error('Error fetching categories and products:', error);
       }
@@ -176,17 +290,13 @@ const AdminDashboard = () => {
     fetchCategoriesAndProducts();
   }, []);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
   const handleUpdateOrderStatus = async (orderId, status) => {
     try {
       await orderAPI.updateStatus(orderId, { status });
       setEditingOrder(null);
       setNewStatus('');
       setError(null);
-      fetchData(); // Refresh orders
+      refreshCurrentTab(); // Refresh orders
     } catch (err) {
       console.error('Error updating order status:', err);
       setError(err);
@@ -199,7 +309,7 @@ const AdminDashboard = () => {
       setEditingInventory(null);
       setNewQuantity('');
       setError(null);
-      fetchData(); // Refresh inventory
+      refreshCurrentTab(); // Refresh inventory
     } catch (err) {
       console.error('Error updating inventory:', err);
       setError(err);
@@ -212,7 +322,7 @@ const AdminDashboard = () => {
       setEditingUser(null);
       setNewUserData({});
       setError(null);
-      fetchData(); // Refresh users
+      refreshCurrentTab(); // Refresh users
     } catch (err) {
       console.error('Error updating user:', err);
       setError(err);
@@ -226,7 +336,7 @@ const AdminDashboard = () => {
     try {
       await userAPI.delete(userId);
       setError(null);
-      fetchData(); // Refresh users
+      refreshCurrentTab(); // Refresh users
     } catch (err) {
       console.error('Error deleting user:', err);
       setError(err);
@@ -240,7 +350,7 @@ const AdminDashboard = () => {
       setShowAddProductModal(false);
       setNewProduct({ name: '', categoryId: '', price: '', sku: '', description: '' });
       setError(null);
-      fetchData();
+      refreshCurrentTab();
     } catch (err) {
       console.error('Error adding product:', err);
       setError(err);
@@ -254,7 +364,7 @@ const AdminDashboard = () => {
       setShowAddCategoryModal(false);
       setNewCategory({ name: '', description: '' });
       setError(null);
-      fetchData();
+      refreshCurrentTab();
     } catch (err) {
       console.error('Error adding category:', err);
       setError(err);
@@ -268,7 +378,7 @@ const AdminDashboard = () => {
       setShowAddInventoryModal(false);
       setNewInventory({ productId: '', quantity: '', location: '' });
       setError(null);
-      fetchData();
+      refreshCurrentTab();
     } catch (err) {
       console.error('Error adding inventory:', err);
       setError(err);
@@ -291,17 +401,71 @@ const AdminDashboard = () => {
     }));
   };
 
-  const handleFilterChange = (tab, filterName, value) => {
-    setFilters(prev => ({
-      ...prev,
-      [tab]: { ...prev[tab], [filterName]: value }
-    }));
-    // Reset to first page when filter changes
+  // Handle category filter change (triggers API call)
+  const handleCategoryChange = (value) => {
+    setSelectedCategory(value);
     setPagination(prev => ({
       ...prev,
-      [tab]: { ...prev[tab], page: 0 }
+      products: { ...prev.products, page: 0 }
     }));
   };
+
+  // Handle status filter change (triggers API call)
+  const handleStatusChange = (value) => {
+    setSelectedStatus(value);
+    setPagination(prev => ({
+      ...prev,
+      orders: { ...prev.orders, page: 0 }
+    }));
+  };
+
+  // Handle role filter change (client-side filtering only)
+  const handleRoleChange = (value) => {
+    setSelectedRole(value);
+    // No API call needed - filtering is done client-side
+  };
+
+  // Handle low stock filter change (triggers API call)
+  const handleLowStockChange = (value) => {
+    setLowStockOnly(value);
+    setPagination(prev => ({
+      ...prev,
+      inventory: { ...prev.inventory, page: 0 }
+    }));
+  };
+
+  // Client-side filtering functions (like Products.js)
+  const filteredProducts = products.filter((product) => {
+    return product.name?.toLowerCase().includes(searchQuery.toLowerCase());
+  });
+
+  const filteredCategories = categories.filter((category) => {
+    return category.name?.toLowerCase().includes(searchQuery.toLowerCase());
+  });
+
+  const filteredOrders = orders.filter((order) => {
+    const searchLower = searchQuery.toLowerCase();
+    return (
+      order.id?.toString().includes(searchLower) ||
+      order.userEmail?.toLowerCase().includes(searchLower) ||
+      order.status?.toLowerCase().includes(searchLower)
+    );
+  });
+
+  const filteredInventory = inventory.filter((item) => {
+    return item.productName?.toLowerCase().includes(searchQuery.toLowerCase());
+  });
+
+  const filteredUsers = users.filter((user) => {
+    const searchLower = searchQuery.toLowerCase();
+    const matchesSearch = (
+      user.email?.toLowerCase().includes(searchLower) ||
+      user.firstName?.toLowerCase().includes(searchLower) ||
+      user.lastName?.toLowerCase().includes(searchLower)
+    );
+    const matchesRole = !selectedRole || user.role === selectedRole;
+    return matchesSearch && matchesRole;
+  });
 
   const renderPagination = (tab) => {
     const currentPagination = pagination[tab];
@@ -330,9 +494,9 @@ const AdminDashboard = () => {
             <p className="text-sm text-gray-700">
               Showing <span className="font-medium">{currentPagination.page * currentPagination.size + 1}</span> to{' '}
               <span className="font-medium">
-                {Math.min((currentPagination.page + 1) * currentPagination.size, currentPagination.totalElements)}
+                {Math.min((currentPagination.page + 1) * currentPagination.size, currentPagination.totalItems || 0)}
               </span> of{' '}
-              <span className="font-medium">{currentPagination.totalElements}</span> results
+              <span className="font-medium">{currentPagination.totalItems || 0}</span> results
             </p>
           </div>
           <div>
@@ -431,18 +595,18 @@ const AdminDashboard = () => {
                         <input
                           type="text"
                           placeholder="Search products..."
-                          value={filters.products.search}
-                          onChange={(e) => handleFilterChange('products', 'search', e.target.value)}
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
                           className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                         />
                       </div>
                       <select
-                        value={filters.products.category}
-                        onChange={(e) => handleFilterChange('products', 'category', e.target.value)}
+                        value={selectedCategory}
+                        onChange={(e) => handleCategoryChange(e.target.value)}
                         className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                       >
                         <option value="">All Categories</option>
-                        {categories.map((cat) => (
+                        {categoryOptions.map((cat) => (
                           <option key={cat.id} value={cat.id}>{cat.name}</option>
                         ))}
                       </select>
@@ -460,7 +624,7 @@ const AdminDashboard = () => {
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                          {products.map((product) => (
+                          {filteredProducts.map((product) => (
                             <tr key={product.id}>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="text-sm font-medium text-gray-900">{product.name}</div>
@@ -518,15 +682,15 @@ const AdminDashboard = () => {
                         <input
                           type="text"
                           placeholder="Search categories..."
-                          value={filters.categories.search}
-                          onChange={(e) => handleFilterChange('categories', 'search', e.target.value)}
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
                           className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                         />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {categories.map((category) => (
+                      {filteredCategories.map((category) => (
                         <div key={category.id} className="bg-gray-50 rounded-lg p-4">
                           <div className="flex justify-between items-start mb-2">
                             <h3 className="text-lg font-semibold text-gray-900">{category.name}</h3>
@@ -568,16 +732,16 @@ const AdminDashboard = () => {
                         <input
                           type="text"
                           placeholder="Search inventory..."
-                          value={filters.inventory.search}
-                          onChange={(e) => handleFilterChange('inventory', 'search', e.target.value)}
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
                           className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                         />
                       </div>
                       <label className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
                         <input
                           type="checkbox"
-                          checked={filters.inventory.lowStock}
-                          onChange={(e) => handleFilterChange('inventory', 'lowStock', e.target.checked)}
+                          checked={lowStockOnly}
+                          onChange={(e) => handleLowStockChange(e.target.checked)}
                           className="rounded text-primary-600 focus:ring-primary-500"
                         />
                         <span className="text-sm text-gray-700">Low Stock Only</span>
@@ -596,7 +760,7 @@ const AdminDashboard = () => {
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                          {inventory.map((item) => (
+                          {filteredInventory.map((item) => (
                             <tr key={item.id}>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="text-sm font-medium text-gray-900">#{item.id}</div>
@@ -686,14 +850,14 @@ const AdminDashboard = () => {
                         <input
                           type="text"
                           placeholder="Search orders..."
-                          value={filters.orders.search}
-                          onChange={(e) => handleFilterChange('orders', 'search', e.target.value)}
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
                           className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                         />
                       </div>
                       <select
-                        value={filters.orders.status}
-                        onChange={(e) => handleFilterChange('orders', 'status', e.target.value)}
+                        value={selectedStatus}
+                        onChange={(e) => handleStatusChange(e.target.value)}
                         className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                       >
                         <option value="">All Statuses</option>
@@ -718,7 +882,7 @@ const AdminDashboard = () => {
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                          {orders.map((order) => (
+                          {filteredOrders.map((order) => (
                             <tr key={order.id}>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="text-sm font-medium text-gray-900">#{order.id}</div>
@@ -754,8 +918,19 @@ const AdminDashboard = () => {
                                   </span>
                                 )}
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="text-sm text-gray-500">{order.items?.length || 0} items</div>
+                              <td className="px-6 py-4">
+                                <div className="text-sm text-gray-500">
+                                  {order.items?.length || 0} items
+                                  {order.items && order.items.length > 0 && (
+                                    <ul className="mt-1 text-xs text-gray-400">
+                                      {order.items.map((item) => (
+                                        <li key={item.id}>
+                                          {item.productName} × {item.quantity}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  )}
+                                </div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 {editingOrder === order.id ? (
@@ -809,18 +984,19 @@ const AdminDashboard = () => {
                         <input
                           type="text"
                           placeholder="Search users..."
-                          value={filters.users.search}
-                          onChange={(e) => handleFilterChange('users', 'search', e.target.value)}
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
                           className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                         />
                       </div>
                       <select
-                        value={filters.users.role}
-                        onChange={(e) => handleFilterChange('users', 'role', e.target.value)}
+                        value={selectedRole}
+                        onChange={(e) => handleRoleChange(e.target.value)}
                         className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                       >
                         <option value="">All Roles</option>
                         <option value="CUSTOMER">CUSTOMER</option>
+                        <option value="SELLER">SELLER</option>
                         <option value="ADMIN">ADMIN</option>
                       </select>
                     </div>
@@ -837,22 +1013,31 @@ const AdminDashboard = () => {
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                          {users.map((user) => (
+                          {filteredUsers.map((user) => (
                             <tr key={user.id}>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="text-sm font-medium text-gray-900">#{user.id}</div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 {editingUser === user.id ? (
-                                  <input
-                                    type="text"
-                                    value={newUserData.name || ''}
-                                    onChange={(e) => setNewUserData({ ...newUserData, name: e.target.value })}
-                                    className="text-sm border border-gray-300 rounded px-2 py-1 w-full"
-                                    placeholder="Name"
-                                  />
+                                  <div className="flex gap-2">
+                                    <input
+                                      type="text"
+                                      value={newUserData.firstName || ''}
+                                      onChange={(e) => setNewUserData({ ...newUserData, firstName: e.target.value })}
+                                      className="text-sm border border-gray-300 rounded px-2 py-1 w-24"
+                                      placeholder="First Name"
+                                    />
+                                    <input
+                                      type="text"
+                                      value={newUserData.lastName || ''}
+                                      onChange={(e) => setNewUserData({ ...newUserData, lastName: e.target.value })}
+                                      className="text-sm border border-gray-300 rounded px-2 py-1 w-24"
+                                      placeholder="Last Name"
+                                    />
+                                  </div>
                                 ) : (
-                                  <div className="text-sm text-gray-900">{user.name}</div>
+                                  <div className="text-sm text-gray-900">{user.firstName} {user.lastName}</div>
                                 )}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
@@ -876,11 +1061,14 @@ const AdminDashboard = () => {
                                     className="text-sm border border-gray-300 rounded px-2 py-1"
                                   >
                                     <option value="CUSTOMER">CUSTOMER</option>
+                                    <option value="SELLER">SELLER</option>
                                     <option value="ADMIN">ADMIN</option>
                                   </select>
                                 ) : (
                                   <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                    user.role === 'ADMIN' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+                                    user.role === 'ADMIN' ? 'bg-purple-100 text-purple-800' : 
+                                    user.role === 'SELLER' ? 'bg-green-100 text-green-800' : 
+                                    'bg-blue-100 text-blue-800'
                                   }`}>
                                     {user.role}
                                   </span>
@@ -910,7 +1098,7 @@ const AdminDashboard = () => {
                                     <button
                                       onClick={() => {
                                         setEditingUser(user.id);
-                                        setNewUserData({ name: user.name, email: user.email, role: user.role });
+                                        setNewUserData({ firstName: user.firstName, lastName: user.lastName, email: user.email, role: user.role });
                                       }}
                                       className="text-primary-600 hover:text-primary-900"
                                     >
@@ -1028,7 +1216,7 @@ const AdminDashboard = () => {
                     className="w-full border border-gray-300 rounded-lg px-3 py-2"
                   >
                     <option value="">Select a category</option>
-                    {categories.map((cat) => (
+                    {categoryOptions.map((cat) => (
                       <option key={cat.id} value={cat.id}>{cat.name}</option>
                     ))}
                   </select>
@@ -1155,7 +1343,7 @@ const AdminDashboard = () => {
                     className="w-full border border-gray-300 rounded-lg px-3 py-2"
                   >
                     <option value="">Select a product</option>
-                    {products.map((product) => (
+                    {productOptions.map((product) => (
                       <option key={product.id} value={product.id}>{product.name}</option>
                     ))}
                   </select>

@@ -15,9 +15,14 @@ enum UserRole {
 type Product {
     id: ID!
     name: String!
+    categoryName: String
+    sku: String!
     price: Float!
     quantity: Int
-    categoryName: String
+    isAvailable: Boolean
+    description: String
+    createdAt: String
+    updatedAt: String
 }
 
 type Inventory {

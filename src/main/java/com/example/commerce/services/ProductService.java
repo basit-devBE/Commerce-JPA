@@ -56,6 +56,7 @@ public class ProductService implements IProductService {
         return response;
     }
 
+    @Cacheable(value = "allProducts", key = "#pageable.pageNumber + '-' + #pageable.pageSize")
     public PagedResponse<ProductResponseDTO> getAllProducts(Pageable pageable){
         log.info("Fetching all products from the db");
         Page<ProductResponseDTO> page = productRepository.findAll(pageable)

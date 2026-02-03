@@ -133,19 +133,61 @@ public class OrderService implements IOrderService {
         return buildOrderResponse(order, items);
     }
 
-    @CacheEvict(value = "orderById", key = "#id")
+    @CacheEvict(value = {"orderById", "inventoryById", "inventoryByProductId"}, allEntries = true)
+    @Transactional
     public OrderResponseDTO updateOrderStatus(Long id, UpdateOrderDTO updateOrderDTO) {
         OrderEntity order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + id));
 
         // Only update status if provided
         if (updateOrderDTO.getStatus() != null) {
-            order.setStatus(updateOrderDTO.getStatus());
+            OrderStatus oldStatus = order.getStatus();
+            OrderStatus newStatus = updateOrderDTO.getStatus();
+            
+            // Prevent changing status from CANCELLED - it's a final state
+            if (oldStatus == OrderStatus.CANCELLED) {
+                throw new IllegalArgumentException("Cannot change status of a cancelled order. Cancelled orders are final.");
+            }
+            
+            // Prevent changing status from DELIVERED - it's a final state
+            if (oldStatus == OrderStatus.DELIVERED && newStatus != OrderStatus.DELIVERED) {
+                throw new IllegalArgumentException("Cannot change status of a delivered order. Delivered orders are final.");
+            }
+            
+            // If changing to CANCELLED, restore inventory
+            if (newStatus == OrderStatus.CANCELLED) {
+                restoreInventoryForOrder(order);
+            }
+            
+            order.setStatus(newStatus);
         }
         
         OrderEntity updatedOrder = orderRepository.save(order);
         List<OrderItemsEntity> items = orderItemsRepository.findByOrderId(updatedOrder.getId());
         return buildOrderResponse(updatedOrder, items);
+    }
+
+    /**
+     * Restores inventory quantities for all items in an order.
+     * Called when an order is cancelled.
+     */
+    private void restoreInventoryForOrder(OrderEntity order) {
+        List<OrderItemsEntity> items = orderItemsRepository.findByOrderId(order.getId());
+        List<InventoryEntity> inventoriesToUpdate = new ArrayList<>();
+        
+        for (OrderItemsEntity item : items) {
+            InventoryEntity inventory = inventoryRepository.findByProductId(item.getProduct().getId())
+                    .orElse(null);
+            
+            if (inventory != null) {
+                inventory.setQuantity(inventory.getQuantity() + item.getQuantity());
+                inventoriesToUpdate.add(inventory);
+            }
+        }
+        
+        if (!inventoriesToUpdate.isEmpty()) {
+            inventoryRepository.saveAll(inventoriesToUpdate);
+        }
     }
 
     @CacheEvict(value = "orderById", key = "#id")
