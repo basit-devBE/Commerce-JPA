@@ -1,4 +1,5 @@
 package com.example.commerce.errorhandlers;
+import com.example.commerce.dtos.responses.ErrorResponse;
 import io.swagger.v3.oas.annotations.Hidden;
 import org.hibernate.JDBCException;
 import org.springframework.http.HttpStatus;
@@ -20,30 +21,36 @@ import java.util.stream.Collectors;
 public class CustomExceptionHandler {
 
     @ExceptionHandler(value = ResourceNotFoundException.class)
-    public ResponseEntity<?> handleResourceNotFoundException(ResourceNotFoundException ex, WebRequest request){
-        HashMap<String, Object> error = new HashMap<>();
-        error.put("timestamp", new Date());
-        error.put("message", ex.getMessage());
-        error.put(("path"), request.getDescription(false));
-        return new ResponseEntity<>(error,HttpStatus.NOT_FOUND);
+    public ResponseEntity<ErrorResponse> handleResourceNotFoundException(ResourceNotFoundException ex, WebRequest request){
+        ErrorResponse error = new ErrorResponse(
+            new Date(),
+            HttpStatus.NOT_FOUND.value(),
+            ex.getMessage(),
+            request.getDescription(false)
+        );
+        return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
     }
 
     @ExceptionHandler(value = ResourceAlreadyExists.class)
-    public ResponseEntity<?> handleEmailAlreadyExistsException(ResourceAlreadyExists ex, WebRequest request) {
-        HashMap<String, Object> error = new HashMap<>();
-        error.put("timestamp", new Date());
-        error.put("message", ex.getMessage());
-        error.put(("path"), request.getDescription(false));
+    public ResponseEntity<ErrorResponse> handleEmailAlreadyExistsException(ResourceAlreadyExists ex, WebRequest request) {
+        ErrorResponse error = new ErrorResponse(
+            new Date(),
+            HttpStatus.CONFLICT.value(),
+            ex.getMessage(),
+            request.getDescription(false)
+        );
         return new ResponseEntity<>(error, HttpStatus.CONFLICT);
     }
 
     @ExceptionHandler(value = Exception.class)
-    public ResponseEntity<?> handleGlobalException(Exception ex, WebRequest request){
-        HashMap<String, Object> error = new HashMap<>();
-        error.put("timestamp", new Date());
-        error.put("message", ex.getMessage());
-        error.put(("path"), request.getDescription(false));
-        return new ResponseEntity<>(error,HttpStatus.INTERNAL_SERVER_ERROR);
+    public ResponseEntity<ErrorResponse> handleGlobalException(Exception ex, WebRequest request){
+        ErrorResponse error = new ErrorResponse(
+            new Date(),
+            HttpStatus.INTERNAL_SERVER_ERROR.value(),
+            ex.getMessage(),
+            request.getDescription(false)
+        );
+        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     @ExceptionHandler(value = MethodArgumentNotValidException.class)
@@ -68,48 +75,57 @@ public class CustomExceptionHandler {
     }
 
     @ExceptionHandler(value = UnauthorizedException.class)
-    public ResponseEntity<?> handleUnauthorizedException(UnauthorizedException ex, WebRequest request) {
-        HashMap<String, Object> error = new HashMap<>();
-        error.put("timestamp", new Date());
-        error.put("message", ex.getMessage());
-        error.put("path", request.getDescription(false));
+    public ResponseEntity<ErrorResponse> handleUnauthorizedException(UnauthorizedException ex, WebRequest request) {
+        ErrorResponse error = new ErrorResponse(
+            new Date(),
+            HttpStatus.UNAUTHORIZED.value(),
+            ex.getMessage(),
+            request.getDescription(false)
+        );
         return new ResponseEntity<>(error, HttpStatus.UNAUTHORIZED);
     }
+    
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<?> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex, WebRequest request) {
-        HashMap<String, Object> error = new HashMap<>();
-        error.put("timestamp", new Date());
-        error.put("status", HttpStatus.BAD_REQUEST.value());
-        error.put("message", "Required request body is missing or malformed");
-        error.put("path", request.getDescription(false));
-
+    public ResponseEntity<ErrorResponse> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex, WebRequest request) {
+        ErrorResponse error = new ErrorResponse(
+            new Date(),
+            HttpStatus.BAD_REQUEST.value(),
+            "Required request body is missing or malformed",
+            request.getDescription(false)
+        );
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(value = ConstraintViolationException.class)
-    public ResponseEntity<?> handleConstraintViolationException(ConstraintViolationException ex, WebRequest request) {
-        HashMap<String, Object> error = new HashMap<>();
-        error.put("timestamp", new Date());
-        error.put("message", ex.getMessage());
-        error.put("path", request.getDescription(false));
+    public ResponseEntity<ErrorResponse> handleConstraintViolationException(ConstraintViolationException ex, WebRequest request) {
+        ErrorResponse error = new ErrorResponse(
+            new Date(),
+            HttpStatus.CONFLICT.value(),
+            ex.getMessage(),
+            request.getDescription(false)
+        );
         return new ResponseEntity<>(error, HttpStatus.CONFLICT);
     }
 
     @ExceptionHandler(value = IllegalArgumentException.class)
-    public ResponseEntity<?> handleIllegalArgumentException(IllegalArgumentException ex, WebRequest request) {
-        HashMap<String, Object> error = new HashMap<>();
-        error.put("timestamp", new Date());
-        error.put("message", ex.getMessage());
-        error.put("path", request.getDescription(false));
+    public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException ex, WebRequest request) {
+        ErrorResponse error = new ErrorResponse(
+            new Date(),
+            HttpStatus.BAD_REQUEST.value(),
+            ex.getMessage(),
+            request.getDescription(false)
+        );
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(value = JDBCException.class)
-    public ResponseEntity<?> handleJDBCException(JDBCException ex, WebRequest request) {
-        HashMap<String, Object> error = new HashMap<>();
-        error.put("timestamp", new Date());
-        error.put("message", "Database error: " + ex.getMessage());
-        error.put("path", request.getDescription(false));
+    public ResponseEntity<ErrorResponse> handleJDBCException(JDBCException ex, WebRequest request) {
+        ErrorResponse error = new ErrorResponse(
+            new Date(),
+            HttpStatus.INTERNAL_SERVER_ERROR.value(),
+            "Database error: " + ex.getMessage(),
+            request.getDescription(false)
+        );
         return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

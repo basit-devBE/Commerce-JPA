@@ -34,7 +34,9 @@ public class CacheConfig {
                 "orderById",
                 // User caches
                 "userById",
-                "userByEmail"
+                "userByEmail",
+                // Cart caches
+                "cartByUserId"
         );
         
         // Wrap with monitoring

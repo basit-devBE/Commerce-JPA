@@ -6,7 +6,7 @@ import { TrashIcon, ShoppingBagIcon } from '@heroicons/react/24/outline';
 
 const Cart = () => {
   const navigate = useNavigate();
-  const { cartItems, removeFromCart, updateQuantity, getCartTotal, clearCart } = useCart();
+  const { cartItems, removeFromCart, updateQuantity, getCartTotal, clearCart, loading } = useCart();
   const { user } = useAuth();
 
   const handleCheckout = () => {
@@ -16,6 +16,19 @@ const Cart = () => {
     }
     navigate('/checkout');
   };
+
+  if (loading && cartItems.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center py-16">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading your cart...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (cartItems.length === 0) {
     return (

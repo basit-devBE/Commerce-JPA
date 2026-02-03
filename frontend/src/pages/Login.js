@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 import ErrorAlert from '../components/ErrorAlert';
 
 const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { syncCartToServer, fetchCart } = useCart();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -27,6 +29,10 @@ const Login = () => {
 
     try {
       await login(formData);
+      // Sync local cart to server after login
+      await syncCartToServer();
+      // Fetch the server cart
+      await fetchCart();
       navigate('/');
     } catch (err) {
       setError(err);

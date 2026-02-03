@@ -101,6 +101,30 @@ export const deleteProduct = (id) => executeQuery(`
   }
 `, { id });
 
+// Paginated products query
+export const getProductsPaginated = (page = 0, size = 10, sortBy = 'id', sortDirection = 'ASC') => executeQuery(`
+  query ProductsPaginated($pagination: PaginationInput!) {
+    productsPaginated(pagination: $pagination) {
+      content {
+        id
+        name
+        categoryName
+        sku
+        price
+        quantity
+      }
+      pageInfo {
+        currentPage
+        totalItems
+        totalPages
+        isLast
+        hasNext
+        hasPrevious
+      }
+    }
+  }
+`, { pagination: { page, size, sortBy, sortDirection } });
+
 // ==================== CATEGORY QUERIES ====================
 
 export const getAllCategories = () => executeQuery(`
@@ -149,15 +173,39 @@ export const deleteCategory = (id) => executeQuery(`
   }
 `, { id });
 
+// Paginated categories query
+export const getCategoriesPaginated = (page = 0, size = 10, sortBy = 'id', sortDirection = 'ASC') => executeQuery(`
+  query CategoriesPaginated($pagination: PaginationInput!) {
+    categoriesPaginated(pagination: $pagination) {
+      content {
+        id
+        name
+        description
+      }
+      pageInfo {
+        currentPage
+        totalItems
+        totalPages
+        isLast
+        hasNext
+        hasPrevious
+      }
+    }
+  }
+`, { pagination: { page, size, sortBy, sortDirection } });
+
 // ==================== ORDER QUERIES ====================
 
+// Basic orders list
 export const getAllOrders = () => executeQuery(`
   query {
     allOrders {
       id
       userId
+      userName
       totalAmount
       status
+      createdAt
       items {
         id
         productId
@@ -169,13 +217,17 @@ export const getAllOrders = () => executeQuery(`
   }
 `);
 
+// Full order with timestamps
 export const getOrderById = (id) => executeQuery(`
   query GetOrder($id: ID!) {
     orderById(id: $id) {
       id
       userId
+      userName
       totalAmount
       status
+      createdAt
+      updatedAt
       items {
         id
         productId
@@ -187,6 +239,55 @@ export const getOrderById = (id) => executeQuery(`
   }
 `, { id });
 
+// Order with user details - uses GraphQL nested relation
+export const getOrderWithUser = (id) => executeQuery(`
+  query GetOrderWithUser($id: ID!) {
+    orderById(id: $id) {
+      id
+      totalAmount
+      status
+      createdAt
+      user {
+        id
+        firstName
+        lastName
+        email
+      }
+      items {
+        productName
+        quantity
+        totalPrice
+      }
+    }
+  }
+`, { id });
+
+// Order with full product details - uses GraphQL nested relation
+export const getOrderWithProducts = (id) => executeQuery(`
+  query GetOrderWithProducts($id: ID!) {
+    orderById(id: $id) {
+      id
+      userId
+      totalAmount
+      status
+      items {
+        id
+        quantity
+        totalPrice
+        product {
+          id
+          name
+          categoryName
+          sku
+          price
+          isAvailable
+        }
+      }
+    }
+  }
+`, { id });
+
+// User's orders with basic info
 export const getOrdersByUserId = (userId) => executeQuery(`
   query GetUserOrders($userId: ID!) {
     ordersByUserId(userId: $userId) {
@@ -194,6 +295,7 @@ export const getOrdersByUserId = (userId) => executeQuery(`
       userId
       totalAmount
       status
+      createdAt
       items {
         productName
         quantity
@@ -203,12 +305,30 @@ export const getOrdersByUserId = (userId) => executeQuery(`
   }
 `, { userId });
 
+// Orders summary for dashboard
+export const getOrdersSummary = () => executeQuery(`
+  query {
+    allOrders {
+      id
+      totalAmount
+      status
+      createdAt
+    }
+  }
+`);
+
 export const createOrder = (input) => executeQuery(`
   mutation CreateOrder($input: AddOrderInput!) {
     createOrder(input: $input) {
       id
       totalAmount
       status
+      createdAt
+      items {
+        productName
+        quantity
+        totalPrice
+      }
     }
   }
 `, { input });
@@ -218,6 +338,7 @@ export const updateOrderStatus = (id, input) => executeQuery(`
     updateOrderStatus(id: $id, input: $input) {
       id
       status
+      updatedAt
       totalAmount
     }
   }
@@ -228,6 +349,64 @@ export const deleteOrder = (id) => executeQuery(`
     deleteOrder(id: $id)
   }
 `, { id });
+
+// Paginated orders query
+export const getOrdersPaginated = (page = 0, size = 10, sortBy = 'id', sortDirection = 'ASC') => executeQuery(`
+  query OrdersPaginated($pagination: PaginationInput!) {
+    ordersPaginated(pagination: $pagination) {
+      content {
+        id
+        userId
+        userName
+        totalAmount
+        status
+        createdAt
+        items {
+          productName
+          quantity
+          totalPrice
+        }
+      }
+      pageInfo {
+        currentPage
+        totalItems
+        totalPages
+        isLast
+        hasNext
+        hasPrevious
+      }
+    }
+  }
+`, { pagination: { page, size, sortBy, sortDirection } });
+
+// Paginated orders by user query
+export const getOrdersByUserIdPaginated = (userId, page = 0, size = 10, sortBy = 'id', sortDirection = 'ASC') => executeQuery(`
+  query OrdersByUserIdPaginated($userId: ID!, $pagination: PaginationInput!) {
+    ordersByUserIdPaginated(userId: $userId, pagination: $pagination) {
+      content {
+        id
+        userId
+        userName
+        totalAmount
+        status
+        createdAt
+        items {
+          productName
+          quantity
+          totalPrice
+        }
+      }
+      pageInfo {
+        currentPage
+        totalItems
+        totalPages
+        isLast
+        hasNext
+        hasPrevious
+      }
+    }
+  }
+`, { userId, pagination: { page, size, sortBy, sortDirection } });
 
 // ==================== INVENTORY QUERIES ====================
 
@@ -294,6 +473,29 @@ export const deleteInventory = (id) => executeQuery(`
   }
 `, { id });
 
+// Paginated inventories query
+export const getInventoriesPaginated = (page = 0, size = 10, sortBy = 'id', sortDirection = 'ASC') => executeQuery(`
+  query InventoriesPaginated($pagination: PaginationInput!) {
+    inventoriesPaginated(pagination: $pagination) {
+      content {
+        id
+        productId
+        productName
+        quantity
+        location
+      }
+      pageInfo {
+        currentPage
+        totalItems
+        totalPages
+        isLast
+        hasNext
+        hasPrevious
+      }
+    }
+  }
+`, { pagination: { page, size, sortBy, sortDirection } });
+
 // ==================== USER QUERIES ====================
 
 export const getAllUsers = () => executeQuery(`
@@ -320,17 +522,214 @@ export const getUserById = (id) => executeQuery(`
   }
 `, { id });
 
-// Export all as default object for easier imports
-export default {
+// Paginated users query
+export const getUsersPaginated = (page = 0, size = 10, sortBy = 'id', sortDirection = 'ASC') => executeQuery(`
+  query UsersPaginated($pagination: PaginationInput!) {
+    usersPaginated(pagination: $pagination) {
+      content {
+        id
+        firstName
+        lastName
+        email
+        role
+      }
+      pageInfo {
+        currentPage
+        totalItems
+        totalPages
+        isLast
+        hasNext
+        hasPrevious
+      }
+    }
+  }
+`, { pagination: { page, size, sortBy, sortDirection } });
+
+// ==================== CART QUERIES ====================
+
+// Basic cart query - only essential fields
+export const getCart = (userId) => executeQuery(`
+  query GetCart($userId: ID!) {
+    cart(userId: $userId) {
+      id
+      userId
+      totalAmount
+      totalItems
+      items {
+        id
+        productId
+        productName
+        productPrice
+        productSku
+        quantity
+        subtotal
+      }
+    }
+  }
+`, { userId });
+
+// Full cart with timestamps
+export const getCartWithTimestamps = (userId) => executeQuery(`
+  query GetCartWithTimestamps($userId: ID!) {
+    cart(userId: $userId) {
+      id
+      userId
+      totalAmount
+      totalItems
+      createdAt
+      updatedAt
+      items {
+        id
+        productId
+        productName
+        productPrice
+        productSku
+        quantity
+        subtotal
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`, { userId });
+
+// Cart with user details - uses GraphQL nested relation
+export const getCartWithUser = (userId) => executeQuery(`
+  query GetCartWithUser($userId: ID!) {
+    cart(userId: $userId) {
+      id
+      totalAmount
+      totalItems
+      user {
+        id
+        firstName
+        lastName
+        email
+      }
+      items {
+        id
+        productId
+        productName
+        productPrice
+        quantity
+        subtotal
+      }
+    }
+  }
+`, { userId });
+
+// Cart with full product details - uses GraphQL nested relation
+export const getCartWithProducts = (userId) => executeQuery(`
+  query GetCartWithProducts($userId: ID!) {
+    cart(userId: $userId) {
+      id
+      userId
+      totalAmount
+      totalItems
+      items {
+        id
+        quantity
+        subtotal
+        product {
+          id
+          name
+          categoryName
+          sku
+          price
+          quantity
+          isAvailable
+        }
+      }
+    }
+  }
+`, { userId });
+
+// Minimal cart for navbar badge
+export const getCartSummary = (userId) => executeQuery(`
+  query GetCartSummary($userId: ID!) {
+    cart(userId: $userId) {
+      id
+      totalAmount
+      totalItems
+    }
+  }
+`, { userId });
+
+// ==================== CART MUTATIONS ====================
+
+export const addToCart = (userId, input) => executeQuery(`
+  mutation AddToCart($userId: ID!, $input: AddToCartInput!) {
+    addToCart(userId: $userId, input: $input) {
+      id
+      totalAmount
+      totalItems
+      items {
+        id
+        productId
+        productName
+        productPrice
+        quantity
+        subtotal
+      }
+    }
+  }
+`, { userId, input });
+
+export const updateCartItem = (userId, productId, input) => executeQuery(`
+  mutation UpdateCartItem($userId: ID!, $productId: ID!, $input: UpdateCartItemInput!) {
+    updateCartItem(userId: $userId, productId: $productId, input: $input) {
+      id
+      totalAmount
+      totalItems
+      items {
+        id
+        productId
+        productName
+        productPrice
+        quantity
+        subtotal
+      }
+    }
+  }
+`, { userId, productId, input });
+
+export const removeFromCart = (userId, productId) => executeQuery(`
+  mutation RemoveFromCart($userId: ID!, $productId: ID!) {
+    removeFromCart(userId: $userId, productId: $productId) {
+      id
+      totalAmount
+      totalItems
+      items {
+        id
+        productId
+        productName
+        productPrice
+        quantity
+        subtotal
+      }
+    }
+  }
+`, { userId, productId });
+
+export const clearCart = (userId) => executeQuery(`
+  mutation ClearCart($userId: ID!) {
+    clearCart(userId: $userId)
+  }
+`, { userId });
+
+// Export all as named object for easier imports
+const graphqlApi = {
   // Products
   getAllProducts,
   getProductById,
+  getProductsPaginated,
   addProduct,
   deleteProduct,
   
   // Categories
   getAllCategories,
   getCategoryById,
+  getCategoriesPaginated,
   addCategory,
   updateCategory,
   deleteCategory,
@@ -338,7 +737,12 @@ export default {
   // Orders
   getAllOrders,
   getOrderById,
+  getOrderWithUser,
+  getOrderWithProducts,
   getOrdersByUserId,
+  getOrdersSummary,
+  getOrdersPaginated,
+  getOrdersByUserIdPaginated,
   createOrder,
   updateOrderStatus,
   deleteOrder,
@@ -347,6 +751,7 @@ export default {
   getAllInventories,
   getInventoryById,
   getInventoryByProductId,
+  getInventoriesPaginated,
   addInventory,
   updateInventory,
   deleteInventory,
@@ -354,4 +759,18 @@ export default {
   // Users
   getAllUsers,
   getUserById,
+  getUsersPaginated,
+
+  // Cart
+  getCart,
+  getCartWithTimestamps,
+  getCartWithUser,
+  getCartWithProducts,
+  getCartSummary,
+  addToCart,
+  updateCartItem,
+  removeFromCart,
+  clearCart,
 };
+
+export default graphqlApi;

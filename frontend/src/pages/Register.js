@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 import ErrorAlert from '../components/ErrorAlert';
 
 
 const Register = () => {
   const navigate = useNavigate();
   const { register } = useAuth();
+  const { syncCartToServer, fetchCart } = useCart();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -31,6 +33,10 @@ const Register = () => {
 
     try {
       await register(formData);
+      // Sync local cart to server after registration
+      await syncCartToServer();
+      // Fetch the server cart
+      await fetchCart();
       navigate('/');
     } catch (err) {
       setError(err);

@@ -103,4 +103,13 @@ export const userAPI = {
   delete: (id) => api.delete(`/users/${id}`),
 };
 
+// Cart APIs
+export const cartAPI = {
+  get: () => api.get('/cart'),
+  addItem: (data) => api.post('/cart/add', data),
+  updateItem: (productId, data) => api.put(`/cart/update/${productId}`, data),
+  removeItem: (productId) => api.delete(`/cart/remove/${productId}`),
+  clear: () => api.delete('/cart/clear'),
+};
+
 export default api;
