@@ -39,7 +39,8 @@ public class ProductGraphQLController {
     @QueryMapping
     public GraphQLPagedResponse<ProductResponseDTO> productsPaginated(
             @Argument PaginationInput pagination,
-            @Argument Long categoryId) {
+            @Argument Long categoryId,
+            @Argument String search) {
         
         int page = pagination != null && pagination.page() != null ? pagination.page() : 0;
         int size = pagination != null && pagination.size() != null ? pagination.size() : 10;
@@ -50,7 +51,9 @@ public class ProductGraphQLController {
         Pageable pageable = PageRequest.of(page, size, sort);
         
         PagedResponse<ProductResponseDTO> pagedResponse;
-        if (categoryId != null) {
+        if (search != null && !search.isBlank()) {
+            pagedResponse = productService.searchProducts(search, pageable);
+        } else if (categoryId != null) {
             pagedResponse = productService.getProductsByCategory(categoryId, pageable);
         } else {
             pagedResponse = productService.getAllProducts(pageable);

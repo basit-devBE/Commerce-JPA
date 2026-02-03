@@ -54,6 +54,10 @@ public class InventoryService implements IInventoryService {
     public Page<InventoryResponseDTO> getAllInventories(Pageable pageable) {
         return inventoryRepository.findAll(pageable).map(inventoryMapper::toResponseDTO);
     }
+    
+    public Page<InventoryResponseDTO> searchInventory(String search, Pageable pageable) {
+        return inventoryRepository.searchInventory(search, pageable).map(inventoryMapper::toResponseDTO);
+    }
 
     @Cacheable(value = "inventoryById", key = "#id")
     public InventoryResponseDTO getInventoryById(Long id) {

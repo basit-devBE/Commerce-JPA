@@ -114,6 +114,12 @@ public class UserService implements IUserService {
     public Page<userSummaryDTO> getAllUsers(Pageable pageable){
       return userRepository.findAll(pageable).map(userMapper::toSummaryDTO);
     }
+    
+    public Page<userSummaryDTO> searchUsers(String search, Pageable pageable) {
+        return userRepository.findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCaseOrEmailContainingIgnoreCase(
+            search, search, search, pageable
+        ).map(userMapper::toSummaryDTO);
+    }
 
     public List<userSummaryDTO> getAllUsersList() {
         return userRepository.findAll().stream().map(userMapper::toSummaryDTO).toList();

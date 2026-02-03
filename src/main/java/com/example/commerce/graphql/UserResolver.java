@@ -35,7 +35,7 @@ public class UserResolver {
     }
 
     @QueryMapping
-    public GraphQLPagedResponse<userSummaryDTO> usersPaginated(@Argument PaginationInput pagination) {
+    public GraphQLPagedResponse<userSummaryDTO> usersPaginated(@Argument PaginationInput pagination, @Argument String search) {
         int page = pagination != null && pagination.page() != null ? pagination.page() : 0;
         int size = pagination != null && pagination.size() != null ? pagination.size() : 10;
         String sortBy = pagination != null && pagination.sortBy() != null ? pagination.sortBy() : "id";
@@ -44,7 +44,12 @@ public class UserResolver {
         Sort sort = sortDir.equalsIgnoreCase("DESC") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
         
-        Page<userSummaryDTO> usersPage = userService.getAllUsers(pageable);
+        Page<userSummaryDTO> usersPage;
+        if (search != null && !search.isBlank()) {
+            usersPage = userService.searchUsers(search, pageable);
+        } else {
+            usersPage = userService.getAllUsers(pageable);
+        }
         return toGraphQLPagedResponse(usersPage);
     }
 

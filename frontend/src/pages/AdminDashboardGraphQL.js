@@ -75,6 +75,9 @@ const AdminDashboardGraphQL = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   
+  // Search state
+  const [searchTerm, setSearchTerm] = useState('');
+  
   // Field selection state for each tab
   const [selectedFields, setSelectedFields] = useState(() => {
     const defaults = {};
@@ -131,12 +134,15 @@ const AdminDashboardGraphQL = () => {
   };
 
   // Build dynamic GraphQL query based on selected fields
-  const buildDynamicQuery = (tab, fields) => {
+  const buildDynamicQuery = (tab, fields, search = '') => {
     const fieldList = fields.join('\n        ');
+    const searchParam = search ? ', $search: String' : '';
+    const searchArg = search ? ', search: $search' : '';
+    
     const queryMap = {
       products: `
-        query ProductsPaginated($pagination: PaginationInput!) {
-          productsPaginated(pagination: $pagination) {
+        query ProductsPaginated($pagination: PaginationInput!${searchParam}) {
+          productsPaginated(pagination: $pagination${searchArg}) {
             content {
               ${fieldList}
             }
@@ -152,8 +158,8 @@ const AdminDashboardGraphQL = () => {
         }
       `,
       categories: `
-        query CategoriesPaginated($pagination: PaginationInput!) {
-          categoriesPaginated(pagination: $pagination) {
+        query CategoriesPaginated($pagination: PaginationInput!${searchParam}) {
+          categoriesPaginated(pagination: $pagination${searchArg}) {
             content {
               ${fieldList}
             }
@@ -169,8 +175,8 @@ const AdminDashboardGraphQL = () => {
         }
       `,
       orders: `
-        query OrdersPaginated($pagination: PaginationInput!) {
-          ordersPaginated(pagination: $pagination) {
+        query OrdersPaginated($pagination: PaginationInput!${searchParam}) {
+          ordersPaginated(pagination: $pagination${searchArg}) {
             content {
               ${fieldList}
               items {
@@ -191,8 +197,8 @@ const AdminDashboardGraphQL = () => {
         }
       `,
       inventory: `
-        query InventoriesPaginated($pagination: PaginationInput!) {
-          inventoriesPaginated(pagination: $pagination) {
+        query InventoriesPaginated($pagination: PaginationInput!${searchParam}) {
+          inventoriesPaginated(pagination: $pagination${searchArg}) {
             content {
               ${fieldList}
             }
@@ -208,8 +214,8 @@ const AdminDashboardGraphQL = () => {
         }
       `,
       users: `
-        query UsersPaginated($pagination: PaginationInput!) {
-          usersPaginated(pagination: $pagination) {
+        query UsersPaginated($pagination: PaginationInput!${searchParam}) {
+          usersPaginated(pagination: $pagination${searchArg}) {
             content {
               ${fieldList}
             }
@@ -257,12 +263,19 @@ const AdminDashboardGraphQL = () => {
     
     // Ensure at least 'id' is selected
     const queryFields = fields.length > 0 ? fields : ['id'];
-    const query = buildDynamicQuery(tab, queryFields);
+    const query = buildDynamicQuery(tab, queryFields, searchTerm);
+    
+    const variables = { 
+      pagination: { page, size, sortBy: 'id', sortDirection: tab === 'orders' ? 'DESC' : 'ASC' }
+    };
+    
+    // Add search term if present
+    if (searchTerm) {
+      variables.search = searchTerm;
+    }
     
     try {
-      const data = await executeGraphQL(query, { 
-        pagination: { page, size, sortBy: 'id', sortDirection: tab === 'orders' ? 'DESC' : 'ASC' } 
-      });
+      const data = await executeGraphQL(query, variables);
       
       if (tab === 'products') {
         setProducts(data.productsPaginated?.content || []);
@@ -304,7 +317,7 @@ const AdminDashboardGraphQL = () => {
   useEffect(() => {
     fetchPaginatedData(activeTab, pagination[activeTab]?.page || 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, selectedFields]);
+  }, [activeTab, selectedFields, searchTerm]);
 
   // Page change handler
   const handlePageChange = (newPage) => {
@@ -1071,6 +1084,17 @@ const AdminDashboardGraphQL = () => {
                 </button>
               ))}
             </nav>
+          </div>
+          
+          {/* Search Bar */}
+          <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+            <input
+              type="text"
+              placeholder={`Search ${activeTab}...`}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
           </div>
         </div>
 

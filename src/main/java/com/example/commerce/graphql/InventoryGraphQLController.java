@@ -43,7 +43,7 @@ public class InventoryGraphQLController {
     }
 
     @QueryMapping
-    public GraphQLPagedResponse<InventoryResponseDTO> inventoriesPaginated(@Argument PaginationInput pagination) {
+    public GraphQLPagedResponse<InventoryResponseDTO> inventoriesPaginated(@Argument PaginationInput pagination, @Argument String search) {
         int page = pagination != null && pagination.page() != null ? pagination.page() : 0;
         int size = pagination != null && pagination.size() != null ? pagination.size() : 10;
         String sortBy = pagination != null && pagination.sortBy() != null ? pagination.sortBy() : "id";
@@ -52,7 +52,12 @@ public class InventoryGraphQLController {
         Sort sort = sortDir.equalsIgnoreCase("DESC") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
         
-        Page<InventoryResponseDTO> inventoriesPage = inventoryService.getAllInventories(pageable);
+        Page<InventoryResponseDTO> inventoriesPage;
+        if (search != null && !search.isBlank()) {
+            inventoriesPage = inventoryService.searchInventory(search, pageable);
+        } else {
+            inventoriesPage = inventoryService.getAllInventories(pageable);
+        }
         return toGraphQLPagedResponse(inventoriesPage);
     }
 

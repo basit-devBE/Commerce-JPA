@@ -191,29 +191,29 @@ type Query {
     # User queries
     getUserById(id: ID!): User
     getAllUsers: [User!]!
-    usersPaginated(pagination: PaginationInput): UserPage!
+    usersPaginated(pagination: PaginationInput, search: String): UserPage!
     
     # Product queries
     allProducts: [Product]
     productById(id: ID!): Product
-    productsPaginated(pagination: PaginationInput, categoryId: ID): ProductPage!
+    productsPaginated(pagination: PaginationInput, categoryId: ID, search: String): ProductPage!
     
     # Inventory queries
     allInventories: [Inventory!]!
     inventoryById(id: ID!): Inventory
     inventoryByProductId(productId: ID!): Inventory
-    inventoriesPaginated(pagination: PaginationInput): InventoryPage!
+    inventoriesPaginated(pagination: PaginationInput, search: String): InventoryPage!
     
     # Category queries
     allCategories: [Category!]!
     categoryById(id: ID!): Category
-    categoriesPaginated(pagination: PaginationInput): CategoryPage!
+    categoriesPaginated(pagination: PaginationInput, search: String): CategoryPage!
     
     # Order queries
     allOrders: [Order!]!
     orderById(id: ID!): Order
     ordersByUserId(userId: ID!): [Order!]!
-    ordersPaginated(pagination: PaginationInput, status: OrderStatus): OrderPage!
+    ordersPaginated(pagination: PaginationInput, status: OrderStatus, search: String): OrderPage!
     ordersByUserIdPaginated(userId: ID!, pagination: PaginationInput): OrderPage!
     
     # Cart queries

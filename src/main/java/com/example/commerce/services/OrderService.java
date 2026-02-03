@@ -113,6 +113,13 @@ public class OrderService implements IOrderService {
             return buildOrderResponse(order, items);
         });
     }
+    
+    public Page<OrderResponseDTO> searchOrders(String search, Pageable pageable) {
+        return orderRepository.searchOrders(search, pageable).map(order -> {
+            List<OrderItemsEntity> items = orderItemsRepository.findByOrderId(order.getId());
+            return buildOrderResponse(order, items);
+        });
+    }
 
     public Page<OrderResponseDTO> getOrdersByUserId(Long userId, Pageable pageable) {
         // Validate user exists

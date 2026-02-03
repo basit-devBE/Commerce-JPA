@@ -215,5 +215,27 @@ public class ProductService implements IProductService {
             page.isLast()
         );
     }
+    
+    public PagedResponse<ProductResponseDTO> searchProducts(String search, Pageable pageable) {
+        Page<ProductEntity> page = productRepository.findByNameContainingIgnoreCaseOrSkuContainingIgnoreCase(
+            search, search, pageable
+        );
+
+        Page<ProductResponseDTO> responsePage = page.map(product -> {
+            ProductResponseDTO response = productMapper.toResponseDTO(product);
+            response.setCategoryName(product.getCategory().getName());
+            inventoryRepository.findByProductId(product.getId())
+                    .ifPresent(inventory -> response.setQuantity(inventory.getQuantity()));
+            return response;
+        });
+
+        return new PagedResponse<>(
+            responsePage.getContent(),
+            responsePage.getNumber(),
+            (int) responsePage.getTotalElements(),
+            responsePage.getTotalPages(),
+            responsePage.isLast()
+        );
+    }
 }
 

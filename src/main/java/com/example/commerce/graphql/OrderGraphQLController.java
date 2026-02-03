@@ -62,7 +62,8 @@ public class OrderGraphQLController {
     @QueryMapping
     public GraphQLPagedResponse<OrderResponseDTO> ordersPaginated(
             @Argument PaginationInput pagination,
-            @Argument OrderStatus status) {
+            @Argument OrderStatus status,
+            @Argument String search) {
         
         int page = pagination != null && pagination.page() != null ? pagination.page() : 0;
         int size = pagination != null && pagination.size() != null ? pagination.size() : 10;
@@ -72,7 +73,12 @@ public class OrderGraphQLController {
         Sort sort = sortDir.equalsIgnoreCase("DESC") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
         
-        Page<OrderResponseDTO> ordersPage = orderService.getAllOrders(pageable);
+        Page<OrderResponseDTO> ordersPage;
+        if (search != null && !search.isBlank()) {
+            ordersPage = orderService.searchOrders(search, pageable);
+        } else {
+            ordersPage = orderService.getAllOrders(pageable);
+        }
         
         // Filter by status if provided
         if (status != null) {

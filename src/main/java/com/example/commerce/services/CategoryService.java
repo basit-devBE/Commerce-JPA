@@ -38,6 +38,12 @@ public class CategoryService implements ICategoryService {
     public Page<CategoryResponseDTO> getAllCategories(Pageable pageable) {
         return categoryRepository.findAll(pageable).map(categoryMapper::toResponseDTO);
     }
+    
+    public Page<CategoryResponseDTO> searchCategories(String search, Pageable pageable) {
+        return categoryRepository.findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
+            search, search, pageable
+        ).map(categoryMapper::toResponseDTO);
+    }
 
     @Cacheable(value = "categoryById", key = "#id")
     public CategoryResponseDTO getCategoryById(Long id) {
