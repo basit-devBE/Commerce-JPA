@@ -117,9 +117,9 @@ export const deleteProduct = (id) => executeQuery(`
 `, { id });
 
 // Paginated products query
-export const getProductsPaginated = (page = 0, size = 10, sortBy = 'id', sortDirection = 'ASC') => executeQuery(`
-  query ProductsPaginated($pagination: PaginationInput!) {
-    productsPaginated(pagination: $pagination) {
+export const getProductsPaginated = (page = 0, size = 10, sortBy = 'id', sortDirection = 'ASC', categoryId = null, search = null) => executeQuery(`
+  query ProductsPaginated($pagination: PaginationInput!, $categoryId: ID, $search: String) {
+    productsPaginated(pagination: $pagination, categoryId: $categoryId, search: $search) {
       content {
         id
         name
@@ -138,7 +138,7 @@ export const getProductsPaginated = (page = 0, size = 10, sortBy = 'id', sortDir
       }
     }
   }
-`, { pagination: { page, size, sortBy, sortDirection } });
+`, { pagination: { page, size, sortBy, sortDirection }, categoryId, search });
 
 // ==================== CATEGORY QUERIES ====================
 
@@ -364,17 +364,20 @@ export const updateOrderStatus = (id, input) => executeQuery(`
 `, { id, input });
 
 // Paginated orders query
-export const getOrdersPaginated = (page = 0, size = 10, sortBy = 'id', sortDirection = 'ASC') => executeQuery(`
-  query OrdersPaginated($pagination: PaginationInput!) {
-    ordersPaginated(pagination: $pagination) {
+export const getOrdersPaginated = (page = 0, size = 10, sortBy = 'id', sortDirection = 'ASC', status = null, search = null) => executeQuery(`
+  query OrdersPaginated($pagination: PaginationInput!, $status: OrderStatus, $search: String) {
+    ordersPaginated(pagination: $pagination, status: $status, search: $search) {
       content {
         id
         userId
         userName
+        userEmail
         totalAmount
         status
         createdAt
+        updatedAt
         items {
+          id
           productName
           quantity
           totalPrice
@@ -390,7 +393,7 @@ export const getOrdersPaginated = (page = 0, size = 10, sortBy = 'id', sortDirec
       }
     }
   }
-`, { pagination: { page, size, sortBy, sortDirection } });
+`, { pagination: { page, size, sortBy, sortDirection }, status, search });
 
 // Paginated orders by user query
 export const getOrdersByUserIdPaginated = (userId, page = 0, size = 10, sortBy = 'id', sortDirection = 'ASC') => executeQuery(`

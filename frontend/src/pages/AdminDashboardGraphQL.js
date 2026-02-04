@@ -91,8 +91,22 @@ const AdminDashboardGraphQL = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   
-  // Search state
+  // Search and filter states
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const [filters, setFilters] = useState({
+    products: { categoryId: '', minPrice: '', maxPrice: '' },
+    orders: { status: '' }
+  });
+  
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500); // Wait 500ms after user stops typing
+    
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
   
   // Field selection state for each tab
   const [selectedFields, setSelectedFields] = useState(() => {
@@ -275,37 +289,87 @@ const AdminDashboardGraphQL = () => {
     setLoading(true);
     setError(null);
     const size = pagination[tab]?.size || 10;
-    const fields = selectedFields[tab] || [];
-    
-    // Ensure at least 'id' is selected
-    const queryFields = fields.length > 0 ? fields : ['id'];
-    const query = buildDynamicQuery(tab, queryFields, searchTerm);
-    
-    const variables = { 
-      pagination: { page, size, sortBy: 'id', sortDirection: tab === 'orders' ? 'DESC' : 'ASC' }
-    };
-    
-    // Add search term if present
-    if (searchTerm) {
-      variables.search = searchTerm;
-    }
     
     try {
-      const data = await executeGraphQL(query, variables);
-      
       if (tab === 'products') {
-        setProducts(data.productsPaginated?.content || []);
+        const productFilters = filters.products;
+        let search = debouncedSearchTerm;
+        
+        // If price range is specified, we'll handle it client-side for now
+        // since the backend might not support it yet
+        const data = await graphqlAPI.getProductsPaginated(
+          page, 
+          size, 
+          'id', 
+          'ASC',
+          productFilters.categoryId || null,
+          search || null
+        );
+        
+        let content = data.productsPaginated?.content || [];
+        
+        // Client-side price filtering if specified
+        if (productFilters.minPrice || productFilters.maxPrice) {
+          content = content.filter(product => {
+            const price = product.price;
+            if (productFilters.minPrice && price < parseFloat(productFilters.minPrice)) return false;
+            if (productFilters.maxPrice && price > parseFloat(productFilters.maxPrice)) return false;
+            return true;
+          });
+        }
+        
+        setProducts(content);
         updatePagination('products', data.productsPaginated?.pageInfo || {});
-      } else if (tab === 'categories') {
-        setCategories(data.categoriesPaginated?.content || []);
-        updatePagination('categories', data.categoriesPaginated?.pageInfo || {});
+        
       } else if (tab === 'orders') {
+        const orderFilters = filters.orders;
+        const data = await graphqlAPI.getOrdersPaginated(
+          page,
+          size,
+          'id',
+          'DESC',
+          orderFilters.status || null,
+          debouncedSearchTerm || null
+        );
         setOrders(data.ordersPaginated?.content || []);
         updatePagination('orders', data.ordersPaginated?.pageInfo || {});
+        
+      } else if (tab === 'categories') {
+        const fields = selectedFields[tab] || [];
+        const queryFields = fields.length > 0 ? fields : ['id'];
+        const query = buildDynamicQuery(tab, queryFields, debouncedSearchTerm);
+        const variables = { 
+          pagination: { page, size, sortBy: 'id', sortDirection: 'ASC' }
+        };
+        if (debouncedSearchTerm) variables.search = debouncedSearchTerm;
+        
+        const data = await executeGraphQL(query, variables);
+        setCategories(data.categoriesPaginated?.content || []);
+        updatePagination('categories', data.categoriesPaginated?.pageInfo || {});
+        
       } else if (tab === 'inventory') {
+        const fields = selectedFields[tab] || [];
+        const queryFields = fields.length > 0 ? fields : ['id'];
+        const query = buildDynamicQuery(tab, queryFields, debouncedSearchTerm);
+        const variables = { 
+          pagination: { page, size, sortBy: 'id', sortDirection: 'ASC' }
+        };
+        if (debouncedSearchTerm) variables.search = debouncedSearchTerm;
+        
+        const data = await executeGraphQL(query, variables);
         setInventory(data.inventoriesPaginated?.content || []);
         updatePagination('inventory', data.inventoriesPaginated?.pageInfo || {});
+        
       } else if (tab === 'users') {
+        const fields = selectedFields[tab] || [];
+        const queryFields = fields.length > 0 ? fields : ['id'];
+        const query = buildDynamicQuery(tab, queryFields, debouncedSearchTerm);
+        const variables = { 
+          pagination: { page, size, sortBy: 'id', sortDirection: 'ASC' }
+        };
+        if (debouncedSearchTerm) variables.search = debouncedSearchTerm;
+        
+        const data = await executeGraphQL(query, variables);
         setUsers(data.usersPaginated?.content || []);
         updatePagination('users', data.usersPaginated?.pageInfo || {});
       }
@@ -333,7 +397,7 @@ const AdminDashboardGraphQL = () => {
   useEffect(() => {
     fetchPaginatedData(activeTab, pagination[activeTab]?.page || 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, selectedFields, searchTerm]);
+  }, [activeTab, selectedFields, debouncedSearchTerm, filters]);
 
   // Page change handler
   const handlePageChange = (newPage) => {
@@ -786,6 +850,87 @@ const AdminDashboardGraphQL = () => {
         </button>
       </div>
 
+      {/* Search and Filters */}
+      <div className="bg-white rounded-lg shadow p-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {/* Search */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+            <input
+              type="text"
+              placeholder="Search products..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          
+          {/* Category Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+            <select
+              value={filters.products.categoryId}
+              onChange={(e) => setFilters(prev => ({
+                ...prev,
+                products: { ...prev.products, categoryId: e.target.value }
+              }))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">All Categories</option>
+              {categories.map(cat => (
+                <option key={cat.id} value={cat.id}>{cat.name}</option>
+              ))}
+            </select>
+          </div>
+          
+          {/* Min Price */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Min Price</label>
+            <input
+              type="number"
+              placeholder="$0"
+              value={filters.products.minPrice}
+              onChange={(e) => setFilters(prev => ({
+                ...prev,
+                products: { ...prev.products, minPrice: e.target.value }
+              }))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          
+          {/* Max Price */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Max Price</label>
+            <input
+              type="number"
+              placeholder="$999"
+              value={filters.products.maxPrice}
+              onChange={(e) => setFilters(prev => ({
+                ...prev,
+                products: { ...prev.products, maxPrice: e.target.value }
+              }))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+        
+        {/* Clear Filters Button */}
+        {(searchTerm || filters.products.categoryId || filters.products.minPrice || filters.products.maxPrice) && (
+          <button
+            onClick={() => {
+              setSearchTerm('');
+              setFilters(prev => ({
+                ...prev,
+                products: { categoryId: '', minPrice: '', maxPrice: '' }
+              }));
+            }}
+            className="mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium"
+          >
+            Clear all filters
+          </button>
+        )}
+      </div>
+
       <FieldSelector />
 
       <DynamicTable 
@@ -884,6 +1029,61 @@ const AdminDashboardGraphQL = () => {
             <PlusIcon className="w-5 h-5" />
             Create Order
           </button>
+        </div>
+
+        {/* Search and Filters */}
+        <div className="bg-white rounded-lg shadow p-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Search */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Search (by user name, email, or order ID)
+              </label>
+              <input
+                type="text"
+                placeholder="Search orders..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            
+            {/* Status Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <select
+                value={filters.orders.status}
+                onChange={(e) => setFilters(prev => ({
+                  ...prev,
+                  orders: { ...prev.orders, status: e.target.value }
+                }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">All Statuses</option>
+                <option value="PENDING">PENDING</option>
+                <option value="PROCESSING">PROCESSING</option>
+                <option value="SHIPPED">SHIPPED</option>
+                <option value="DELIVERED">DELIVERED</option>
+                <option value="CANCELLED">CANCELLED</option>
+              </select>
+            </div>
+          </div>
+          
+          {/* Clear Filters Button */}
+          {(searchTerm || filters.orders.status) && (
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                setFilters(prev => ({
+                  ...prev,
+                  orders: { status: '' }
+                }));
+              }}
+              className="mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium"
+            >
+              Clear all filters
+            </button>
+          )}
         </div>
 
         <FieldSelector />
@@ -1092,17 +1292,6 @@ const AdminDashboardGraphQL = () => {
                 </button>
               ))}
             </nav>
-          </div>
-          
-          {/* Search Bar */}
-          <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-            <input
-              type="text"
-              placeholder={`Search ${activeTab}...`}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
           </div>
         </div>
 
