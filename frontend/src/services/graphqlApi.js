@@ -218,6 +218,7 @@ export const getAllOrders = () => executeQuery(`
       id
       userId
       userName
+      userEmail
       totalAmount
       status
       createdAt
@@ -239,6 +240,7 @@ export const getOrderById = (id) => executeQuery(`
       id
       userId
       userName
+      userEmail
       totalAmount
       status
       createdAt
@@ -308,6 +310,8 @@ export const getOrdersByUserId = (userId) => executeQuery(`
     ordersByUserId(userId: $userId) {
       id
       userId
+      userName
+      userEmail
       totalAmount
       status
       createdAt
@@ -358,12 +362,6 @@ export const updateOrderStatus = (id, input) => executeQuery(`
     }
   }
 `, { id, input });
-
-export const deleteOrder = (id) => executeQuery(`
-  mutation DeleteOrder($id: ID!) {
-    deleteOrder(id: $id)
-  }
-`, { id });
 
 // Paginated orders query
 export const getOrdersPaginated = (page = 0, size = 10, sortBy = 'id', sortDirection = 'ASC') => executeQuery(`
@@ -760,7 +758,6 @@ const graphqlApi = {
   getOrdersByUserIdPaginated,
   createOrder,
   updateOrderStatus,
-  deleteOrder,
   
   // Inventory
   getAllInventories,

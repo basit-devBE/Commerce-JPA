@@ -119,12 +119,4 @@ public class OrderController {
         ApiResponse<OrderResponseDTO> apiResponse = new ApiResponse<>(HttpStatus.OK.value(), "Order status updated successfully", updatedOrder);
         return ResponseEntity.ok(apiResponse);
     }
-
-    @RequiresRole(UserRole.ADMIN)
-    @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteOrder(@PathVariable Long id) {
-        orderService.deleteOrder(id);
-        ApiResponse<Void> apiResponse = new ApiResponse<>(HttpStatus.OK.value(), "Order deleted successfully", null);
-        return ResponseEntity.ok(apiResponse);
-    }
 }

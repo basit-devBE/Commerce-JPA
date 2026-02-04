@@ -14,8 +14,8 @@ import com.example.commerce.repositories.UserRepository;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.mindrot.jbcrypt.BCrypt;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -101,11 +101,8 @@ public class UserService implements IUserService {
         if(userDTO.getLastName() != null && !userDTO.getLastName().isBlank()){
             userEntity.setLastName(userDTO.getLastName());
         }
-        if(userDTO.getEmail() != null && !userDTO.getEmail().isBlank()){
+        if(userDTO.getEmail() != null && !userDTO.getEmail().isBlank()) {
             userEntity.setEmail(userDTO.getEmail());
-        }
-        if(userDTO.getRole() != null){
-            userEntity.setRole(userDTO.getRole());
         }
         UserEntity updatedUser = userRepository.save(userEntity);
         return userMapper.toSummaryDTO(updatedUser);

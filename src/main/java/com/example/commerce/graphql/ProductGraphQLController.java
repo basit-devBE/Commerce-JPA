@@ -46,6 +46,11 @@ public class ProductGraphQLController {
             @Argument Long categoryId,
             @Argument String search) {
         
+        // Handle null pagination with defaults
+        if (pagination == null) {
+            pagination = new PaginationInput(0, 10, "id", "ASC");
+        }
+        
         int page = pagination.getPage();
         int size = pagination.getSize();
         String sortBy = pagination.getSortBy();

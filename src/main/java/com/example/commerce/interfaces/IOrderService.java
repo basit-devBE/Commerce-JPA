@@ -17,5 +17,4 @@ public interface IOrderService {
 
     OrderResponseDTO updateOrderStatus(Long id, UpdateOrderDTO updateOrderDTO);
 
-    void deleteOrder(Long id);
 }

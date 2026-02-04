@@ -57,6 +57,7 @@ const AVAILABLE_FIELDS = {
     { key: 'id', label: 'ID', default: true },
     { key: 'userId', label: 'User ID', default: true },
     { key: 'userName', label: 'User Name', default: false },
+    { key: 'userEmail', label: 'User Email', default: false },
     { key: 'totalAmount', label: 'Total', default: true },
     { key: 'status', label: 'Status', default: true },
     { key: 'createdAt', label: 'Created At', default: true },
@@ -469,20 +470,6 @@ const AdminDashboardGraphQL = () => {
     }
   };
 
-  const handleDeleteOrder = async (orderId) => {
-    if (!window.confirm('Are you sure you want to delete this order?')) {
-      return;
-    }
-    try {
-      await graphqlAPI.deleteOrder(orderId);
-      setError(null);
-      refreshCurrentTab();
-    } catch (err) {
-      console.error('Error deleting order:', err);
-      setError(err);
-    }
-  };
-
   // ==================== INVENTORY HANDLERS ====================
   
   const handleAddInventory = async (e) => {
@@ -883,101 +870,106 @@ const AdminDashboardGraphQL = () => {
     </div>
   );
 
-  const renderOrders = () => (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-800">Orders (GraphQL)</h2>
-        <button
-          onClick={() => setShowAddOrderModal(true)}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-        >
-          <PlusIcon className="w-5 h-5" />
-          Create Order
-        </button>
-      </div>
+  const renderOrders = () => {
+    const fields = selectedFields['orders'] || [];
+    
+    return (
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold text-gray-800">Orders (GraphQL)</h2>
+          <button
+            onClick={() => setShowAddOrderModal(true)}
+            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+          >
+            <PlusIcon className="w-5 h-5" />
+            Create Order
+          </button>
+        </div>
 
-      <FieldSelector />
+        <FieldSelector />
 
-      <div className="grid gap-4">
-        {orders.map((order) => (
-          <div key={order.id} className="bg-white rounded-lg shadow p-6">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h3 className="text-lg font-semibold">Order #{order.id}</h3>
-                <p className="text-sm text-gray-600">User ID: {order.userId}</p>
-                <p className="text-sm font-bold text-gray-800">Total: ${order.totalAmount?.toFixed(2)}</p>
+        <div className="grid gap-4">
+          {orders.map((order) => (
+            <div key={order.id} className="bg-white rounded-lg shadow p-6">
+              <div className="flex justify-between items-start mb-4">
+                <div className="space-y-1">
+                  {fields.includes('id') && <h3 className="text-lg font-semibold">Order #{order.id}</h3>}
+                  {fields.includes('userId') && <p className="text-sm text-gray-600">User ID: {order.userId}</p>}
+                  {fields.includes('userName') && order.userName && <p className="text-sm text-gray-600">User: {order.userName}</p>}
+                  {fields.includes('userEmail') && order.userEmail && <p className="text-sm text-gray-600">Email: {order.userEmail}</p>}
+                  {fields.includes('totalAmount') && <p className="text-sm font-bold text-gray-800">Total: ${order.totalAmount?.toFixed(2)}</p>}
+                  {fields.includes('createdAt') && order.createdAt && <p className="text-sm text-gray-500">Created: {new Date(order.createdAt).toLocaleDateString()}</p>}
+                  {fields.includes('updatedAt') && order.updatedAt && <p className="text-sm text-gray-500">Updated: {new Date(order.updatedAt).toLocaleDateString()}</p>}
+                </div>
+                <div className="flex items-center gap-2">
+                  {editingOrder === order.id ? (
+                    <>
+                      <select
+                        value={newStatus}
+                        onChange={(e) => setNewStatus(e.target.value)}
+                        className="border rounded px-3 py-1"
+                      >
+                        <option value="">Select Status</option>
+                        <option value="PENDING">PENDING</option>
+                        <option value="PROCESSING">PROCESSING</option>
+                        <option value="SHIPPED">SHIPPED</option>
+                        <option value="DELIVERED">DELIVERED</option>
+                        <option value="CANCELLED">CANCELLED</option>
+                      </select>
+                      <button
+                        onClick={() => handleUpdateOrderStatus(order.id, newStatus)}
+                        className="text-green-600 hover:text-green-800 font-medium"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingOrder(null);
+                          setNewStatus('');
+                        }}
+                        className="text-gray-600 hover:text-gray-800"
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      {fields.includes('status') && (
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          order.status === 'DELIVERED' ? 'bg-green-100 text-green-800' :
+                          order.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
+                          'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {order.status}
+                        </span>
+                      )}
+                      <button
+                        onClick={() => {
+                          setEditingOrder(order.id);
+                          setNewStatus(order.status);
+                        }}
+                        className="text-blue-600 hover:text-blue-800"
+                      >
+                        <PencilIcon className="w-5 h-5" />
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                {editingOrder === order.id ? (
-                  <>
-                    <select
-                      value={newStatus}
-                      onChange={(e) => setNewStatus(e.target.value)}
-                      className="border rounded px-3 py-1"
-                    >
-                      <option value="">Select Status</option>
-                      <option value="PENDING">PENDING</option>
-                      <option value="PROCESSING">PROCESSING</option>
-                      <option value="SHIPPED">SHIPPED</option>
-                      <option value="DELIVERED">DELIVERED</option>
-                      <option value="CANCELLED">CANCELLED</option>
-                    </select>
-                    <button
-                      onClick={() => handleUpdateOrderStatus(order.id, newStatus)}
-                      className="text-green-600 hover:text-green-800 font-medium"
-                    >
-                      Save
-                    </button>
-                    <button
-                      onClick={() => {
-                        setEditingOrder(null);
-                        setNewStatus('');
-                      }}
-                      className="text-gray-600 hover:text-gray-800"
-                    >
-                      Cancel
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      order.status === 'DELIVERED' ? 'bg-green-100 text-green-800' :
-                      order.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
-                      'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {order.status}
-                    </span>
-                    <button
-                      onClick={() => {
-                        setEditingOrder(order.id);
-                        setNewStatus(order.status);
-                      }}
-                      className="text-blue-600 hover:text-blue-800"
-                    >
-                      <PencilIcon className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteOrder(order.id)}
-                      className="text-red-600 hover:text-red-800"
-                    >
-                      <TrashIcon className="w-5 h-5" />
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
             
-            <div className="border-t pt-4">
-              <h4 className="font-medium mb-2">Order Items:</h4>
-              <div className="space-y-2">
-                {order.items?.map((item) => (
-                  <div key={item.id} className="flex justify-between text-sm">
-                    <span>{item.productName} x {item.quantity}</span>
-                    <span className="font-medium">${item.totalPrice?.toFixed(2)}</span>
-                  </div>
-                ))}
+            {fields.includes('items') && order.items && order.items.length > 0 && (
+              <div className="border-t pt-4">
+                <h4 className="font-medium mb-2">Order Items:</h4>
+                <div className="space-y-2">
+                  {order.items.map((item) => (
+                    <div key={item.id} className="flex justify-between text-sm">
+                      <span>{item.productName} x {item.quantity}</span>
+                      <span className="font-medium">${item.totalPrice?.toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         ))}
       </div>
@@ -985,6 +977,7 @@ const AdminDashboardGraphQL = () => {
       <PaginationControls tab="orders" />
     </div>
   );
+};
 
   const renderInventory = () => (
     <div className="space-y-4">

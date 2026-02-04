@@ -43,6 +43,7 @@ type Order {
     id: ID!
     userId: ID!
     userName: String
+    userEmail: String
     user: User
     totalAmount: Float!
     status: OrderStatus!
@@ -231,7 +232,6 @@ type Mutation {
     deleteCategory(id: ID!): Boolean!
     createOrder(input: AddOrderInput!): Order!
     updateOrderStatus(id: ID!, input: UpdateOrderInput!): Order!
-    deleteOrder(id: ID!): Boolean!
     addToCart(userId: ID!, input: AddToCartInput!): Cart!
     updateCartItem(userId: ID!, productId: ID!, input: UpdateCartItemInput!): Cart!
     removeFromCart(userId: ID!, productId: ID!): Cart!

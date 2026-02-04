@@ -11,6 +11,7 @@ public class OrderResponseDTO {
     private Long id;
     private Long userId;
     private String userName;
+    private String userEmail;
     private Double totalAmount;
     private OrderStatus status;
     private List<OrderItemResponseDTO> items;

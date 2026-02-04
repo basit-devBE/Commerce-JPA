@@ -71,6 +71,11 @@ public class OrderGraphQLController {
             @Argument OrderStatus status,
             @Argument String search) {
         
+        // Handle null pagination with defaults
+        if (pagination == null) {
+            pagination = new PaginationInput(0, 10, "id", "DESC");
+        }
+        
         int page = pagination.getPage();
         int size = pagination.getSize();
         String sortBy = pagination.getSortBy();
@@ -108,6 +113,11 @@ public class OrderGraphQLController {
             @Argument Long userId,
             @Argument PaginationInput pagination) {
         
+        // Handle null pagination with defaults
+        if (pagination == null) {
+            pagination = new PaginationInput(0, 10, "id", "DESC");
+        }
+        
         int page = pagination.getPage();
         int size = pagination.getSize();
         String sortBy = pagination.getSortBy();
@@ -142,12 +152,6 @@ public class OrderGraphQLController {
         UpdateOrderDTO dto = new UpdateOrderDTO();
         dto.setStatus(input.status());
         return orderService.updateOrderStatus(id, dto);
-    }
-
-    @MutationMapping
-    public boolean deleteOrder(@Argument Long id) {
-        orderService.deleteOrder(id);
-        return true;
     }
 
     // ==================== SCHEMA MAPPINGS (Nested Relations) ====================
