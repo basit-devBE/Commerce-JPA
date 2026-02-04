@@ -27,6 +27,16 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Log detailed error information for debugging
+    if (error.response?.data) {
+      console.error('API Error:', {
+        message: error.response.data.message,
+        status: error.response.data.status,
+        path: error.response.data.path,
+        timestamp: error.response.data.timestamp,
+      });
+    }
+    
     if (error.response?.status === 401) {
       localStorage.removeItem('authToken');
       localStorage.removeItem('user');
@@ -48,6 +58,8 @@ export const authAPI = {
 export const productAPI = {
   getAll: (params) => api.get('/products/public/all', { params }),
   getById: (id) => api.get(`/products/${id}`),
+  getByPriceRange: (minPrice, maxPrice, params) => 
+    api.get('/products/public/price-range', { params: { minPrice, maxPrice, ...params } }),
   create: (data) => api.post('/products/add', data),
   update: (id, data) => api.put(`/products/update/${id}`, data),
   delete: (id) => api.delete(`/products/${id}`),
@@ -89,6 +101,15 @@ export const userAPI = {
   getById: (id) => api.get(`/users/${id}`),
   update: (id, data) => api.put(`/users/update/${id}`, data),
   delete: (id) => api.delete(`/users/${id}`),
+};
+
+// Cart APIs
+export const cartAPI = {
+  get: () => api.get('/cart'),
+  addItem: (data) => api.post('/cart/add', data),
+  updateItem: (productId, data) => api.put(`/cart/update/${productId}`, data),
+  removeItem: (productId) => api.delete(`/cart/remove/${productId}`),
+  clear: () => api.delete('/cart/clear'),
 };
 
 export default api;

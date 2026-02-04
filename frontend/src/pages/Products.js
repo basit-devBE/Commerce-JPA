@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { productAPI, categoryAPI } from '../services/api';
 import { useCart } from '../context/CartContext';
@@ -10,6 +10,9 @@ const Products = () => {
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [priceFilterActive, setPriceFilterActive] = useState(false);
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const { addToCart } = useCart();
@@ -33,15 +36,26 @@ const Products = () => {
         setLoading(true);
         const params = { page, size: 12 };
         
-        // Add categoryId if a specific category is selected
-        if (selectedCategory !== 'all') {
-          const category = categories.find(cat => cat.name === selectedCategory);
-          if (category) {
-            params.categoryId = category.id;
+        let response;
+        
+        // Check if price filter is active
+        if (priceFilterActive && minPrice && maxPrice) {
+          response = await productAPI.getByPriceRange(
+            parseFloat(minPrice), 
+            parseFloat(maxPrice), 
+            params
+          );
+        } else {
+          // Add categoryId if a specific category is selected
+          if (selectedCategory !== 'all') {
+            const category = categories.find(cat => cat.name === selectedCategory);
+            if (category) {
+              params.categoryId = category.id;
+            }
           }
+          response = await productAPI.getAll(params);
         }
         
-        const response = await productAPI.getAll(params);
         setProducts(response.data.data.content);
         setTotalPages(response.data.data.totalPages);
       } catch (error) {
@@ -51,10 +65,10 @@ const Products = () => {
       }
     };
 
-    if (categories.length > 0 || selectedCategory === 'all') {
+    if (categories.length > 0 || selectedCategory === 'all' || priceFilterActive) {
       fetchProducts();
     }
-  }, [page, selectedCategory, categories]);
+  }, [page, selectedCategory, categories, priceFilterActive, minPrice, maxPrice]);
 
   const handleAddToCart = (product) => {
     addToCart(product);
@@ -64,12 +78,30 @@ const Products = () => {
 
   const handleCategoryChange = (category) => {
     setSelectedCategory(category);
+    setPriceFilterActive(false);
+    setMinPrice('');
+    setMaxPrice('');
     setPage(0); // Reset to first page
   };
 
   const handleSearchChange = (query) => {
     setSearchQuery(query);
     setPage(0); // Reset to first page
+  };
+
+  const handlePriceFilter = () => {
+    if (minPrice && maxPrice) {
+      setPriceFilterActive(true);
+      setSelectedCategory('all');
+      setPage(0);
+    }
+  };
+
+  const clearPriceFilter = () => {
+    setPriceFilterActive(false);
+    setMinPrice('');
+    setMaxPrice('');
+    setPage(0);
   };
 
   const filteredProducts = products.filter((product) => {
@@ -88,7 +120,7 @@ const Products = () => {
 
         {/* Filters */}
         <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* Search */}
             <div className="relative">
               <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -107,6 +139,7 @@ const Products = () => {
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 value={selectedCategory}
                 onChange={(e) => handleCategoryChange(e.target.value)}
+                disabled={priceFilterActive}
               >
                 <option value="all">All Categories</option>
                 {categories.map((category) => (
@@ -116,7 +149,54 @@ const Products = () => {
                 ))}
               </select>
             </div>
+
+            {/* Price Range Filter */}
+            <div className="flex gap-2">
+              <input
+                type="number"
+                placeholder="Min Price"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                value={minPrice}
+                onChange={(e) => setMinPrice(e.target.value)}
+                min="0"
+                step="0.01"
+              />
+              <input
+                type="number"
+                placeholder="Max Price"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(e.target.value)}
+                min="0"
+                step="0.01"
+              />
+              {priceFilterActive ? (
+                <button
+                  onClick={clearPriceFilter}
+                  className="px-4 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors whitespace-nowrap"
+                >
+                  Clear
+                </button>
+              ) : (
+                <button
+                  onClick={handlePriceFilter}
+                  disabled={!minPrice || !maxPrice}
+                  className="px-4 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed whitespace-nowrap"
+                >
+                  Apply
+                </button>
+              )}
+            </div>
           </div>
+          
+          {/* Active Filter Badge */}
+          {priceFilterActive && (
+            <div className="mt-4 flex items-center gap-2 text-sm">
+              <span className="px-3 py-1 bg-primary-100 text-primary-700 rounded-full">
+                Price Range: ${minPrice} - ${maxPrice}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Products Grid */}

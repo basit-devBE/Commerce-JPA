@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
+import ErrorAlert from '../components/ErrorAlert';
 
 const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { syncCartToServer, fetchCart } = useCart();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
@@ -21,14 +24,18 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError(null);
     setLoading(true);
 
     try {
       await login(formData);
+      // Sync local cart to server after login
+      await syncCartToServer();
+      // Fetch the server cart
+      await fetchCart();
       navigate('/');
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Please try again.');
+      setError(err);
     } finally {
       setLoading(false);
     }
@@ -47,11 +54,7 @@ const Login = () => {
         </div>
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <form className="space-y-6" onSubmit={handleSubmit}>
-            {error && (
-              <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
-                <p className="text-sm text-red-700">{error}</p>
-              </div>
-            )}
+            <ErrorAlert error={error} onDismiss={() => setError(null)} />
             
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">

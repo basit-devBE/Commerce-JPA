@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
+import ErrorAlert from '../components/ErrorAlert';
+
 
 const Register = () => {
   const navigate = useNavigate();
   const { register } = useAuth();
+  const { syncCartToServer, fetchCart } = useCart();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -12,7 +16,7 @@ const Register = () => {
     password: '',
     role: 'CUSTOMER',
   });
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
@@ -24,14 +28,18 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError(null);
     setLoading(true);
 
     try {
       await register(formData);
+      // Sync local cart to server after registration
+      await syncCartToServer();
+      // Fetch the server cart
+      await fetchCart();
       navigate('/');
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed. Please try again.');
+      setError(err);
     } finally {
       setLoading(false);
     }
@@ -50,11 +58,7 @@ const Register = () => {
         </div>
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <form className="space-y-6" onSubmit={handleSubmit}>
-            {error && (
-              <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
-                <p className="text-sm text-red-700">{error}</p>
-              </div>
-            )}
+            <ErrorAlert error={error} onDismiss={() => setError(null)} />
             
             <div className="grid grid-cols-2 gap-4">
               <div>

@@ -3,17 +3,18 @@ import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { orderAPI } from '../services/api';
 import { CheckCircleIcon } from '@heroicons/react/24/outline';
+import ErrorAlert from '../components/ErrorAlert';
 
 const Checkout = () => {
   const navigate = useNavigate();
   const { cartItems, getCartTotal, clearCart } = useCart();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
 
   const handlePlaceOrder = async (e) => {
     e.preventDefault();
-    setError('');
+    setError(null);
     setLoading(true);
 
     try {
@@ -32,7 +33,7 @@ const Checkout = () => {
         navigate('/orders');
       }, 2000);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to place order. Please try again.');
+      setError(err);
     } finally {
       setLoading(false);
     }
@@ -93,11 +94,7 @@ const Checkout = () => {
               <div className="bg-white rounded-xl shadow-sm p-6">
                 <h2 className="text-xl font-bold text-gray-900 mb-4">Payment Information</h2>
                 
-                {error && (
-                  <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded mb-4">
-                    <p className="text-sm text-red-700">{error}</p>
-                  </div>
-                )}
+                <ErrorAlert error={error} onDismiss={() => setError(null)} />
 
                 <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded mb-6">
                   <p className="text-sm text-blue-700">

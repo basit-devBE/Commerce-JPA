@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { productAPI, categoryAPI, orderAPI, inventoryAPI, userAPI } from '../services/api';
-import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, TrashIcon, MagnifyingGlassIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import ErrorAlert from '../components/ErrorAlert';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('products');
@@ -12,6 +13,7 @@ const AdminDashboard = () => {
   const [dbMetrics, setDbMetrics] = useState({});
   const [cacheMetrics, setCacheMetrics] = useState({});
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [editingOrder, setEditingOrder] = useState(null);
   const [newStatus, setNewStatus] = useState('');
   const [editingInventory, setEditingInventory] = useState(null);
@@ -24,25 +26,231 @@ const AdminDashboard = () => {
   const [newProduct, setNewProduct] = useState({ name: '', categoryId: '', price: '', sku: '', description: '' });
   const [newCategory, setNewCategory] = useState({ name: '', description: '' });
   const [newInventory, setNewInventory] = useState({ productId: '', quantity: '', location: '' });
+  
+  // Dropdown options (separate from tab data to prevent overwrites)
+  const [categoryOptions, setCategoryOptions] = useState([]);
+  const [productOptions, setProductOptions] = useState([]);
+  
+  // Pagination state
+  const [pagination, setPagination] = useState({
+    products: { page: 0, size: 10, totalPages: 0, totalItems: 0 },
+    categories: { page: 0, size: 10, totalPages: 0, totalItems: 0 },
+    orders: { page: 0, size: 10, totalPages: 0, totalItems: 0 },
+    inventory: { page: 0, size: 10, totalPages: 0, totalItems: 0 },
+    users: { page: 0, size: 10, totalPages: 0, totalItems: 0 }
+  });
+  
+  // Search state - for client-side filtering (like Products.js)
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Filter state - for API-level filtering (dropdowns only)
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('');
+  const [selectedRole, setSelectedRole] = useState('');
+  const [lowStockOnly, setLowStockOnly] = useState(false);
 
-  const fetchData = useCallback(async () => {
+  // Main data fetching effect - only depends on activeTab, pagination, and dropdown filters
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      setSearchQuery(''); // Reset search when switching tabs or filters
+      try {
+        if (activeTab === 'products') {
+          const params = { 
+            page: pagination.products.page, 
+            size: pagination.products.size
+          };
+          if (selectedCategory) {
+            params.categoryId = selectedCategory;
+          }
+          const response = await productAPI.getAll(params);
+          setProducts(response.data.data.content);
+          setPagination(prev => ({
+            ...prev,
+            products: {
+              ...prev.products,
+              totalPages: response.data.data.totalPages,
+              totalItems: response.data.data.totalItems
+            }
+          }));
+        } else if (activeTab === 'categories') {
+          const response = await categoryAPI.getAll({ 
+            page: pagination.categories.page, 
+            size: pagination.categories.size
+          });
+          setCategories(response.data.data.content);
+          setPagination(prev => ({
+            ...prev,
+            categories: {
+              ...prev.categories,
+              totalPages: response.data.data.totalPages,
+              totalItems: response.data.data.totalItems
+            }
+          }));
+        } else if (activeTab === 'orders') {
+          const params = { 
+            page: pagination.orders.page, 
+            size: pagination.orders.size
+          };
+          if (selectedStatus) {
+            params.status = selectedStatus;
+          }
+          const response = await orderAPI.getAll(params);
+          setOrders(response.data.data.content);
+          setPagination(prev => ({
+            ...prev,
+            orders: {
+              ...prev.orders,
+              totalPages: response.data.data.totalPages,
+              totalItems: response.data.data.totalItems
+            }
+          }));
+        } else if (activeTab === 'inventory') {
+          const params = { 
+            page: pagination.inventory.page, 
+            size: pagination.inventory.size
+          };
+          if (lowStockOnly) {
+            params.lowStock = true;
+          }
+          const response = await inventoryAPI.getAll(params);
+          setInventory(response.data.data.content);
+          setPagination(prev => ({
+            ...prev,
+            inventory: {
+              ...prev.inventory,
+              totalPages: response.data.data.totalPages,
+              totalItems: response.data.data.totalItems
+            }
+          }));
+        } else if (activeTab === 'users') {
+          const params = { 
+            page: pagination.users.page, 
+            size: pagination.users.size
+          };
+          const response = await userAPI.getAll(params);
+          setUsers(response.data.data.content);
+          setPagination(prev => ({
+            ...prev,
+            users: {
+              ...prev.users,
+              totalPages: response.data.data.totalPages,
+              totalItems: response.data.data.totalItems
+            }
+          }));
+        } else if (activeTab === 'performance') {
+          const [dbRes, cacheRes] = await Promise.all([
+            fetch('http://localhost:8080/api/performance/db-metrics', {
+              headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+            }),
+            fetch('http://localhost:8080/api/performance/cache-metrics', {
+              headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+            })
+          ]);
+          const dbData = await dbRes.json();
+          const cacheData = await cacheRes.json();
+          setDbMetrics(dbData.data || {});
+          setCacheMetrics(cacheData.data || {});
+        }
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        setError(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, selectedCategory, selectedStatus, lowStockOnly, pagination.products.page, pagination.categories.page, pagination.orders.page, pagination.inventory.page, pagination.users.page]);
+
+  // Separate function for manual refresh after mutations
+  const refreshCurrentTab = async () => {
     setLoading(true);
     try {
       if (activeTab === 'products') {
-        const response = await productAPI.getAll({ page: 0, size: 100 });
+        const params = { 
+          page: pagination.products.page, 
+          size: pagination.products.size
+        };
+        if (selectedCategory) {
+          params.categoryId = selectedCategory;
+        }
+        const response = await productAPI.getAll(params);
         setProducts(response.data.data.content);
+        setPagination(prev => ({
+          ...prev,
+          products: {
+            ...prev.products,
+            totalPages: response.data.data.totalPages,
+            totalItems: response.data.data.totalItems
+          }
+        }));
       } else if (activeTab === 'categories') {
-        const response = await categoryAPI.getAll({ page: 0, size: 100 });
+        const response = await categoryAPI.getAll({ 
+          page: pagination.categories.page, 
+          size: pagination.categories.size
+        });
         setCategories(response.data.data.content);
+        setPagination(prev => ({
+          ...prev,
+          categories: {
+            ...prev.categories,
+            totalPages: response.data.data.totalPages,
+            totalItems: response.data.data.totalItems
+          }
+        }));
       } else if (activeTab === 'orders') {
-        const response = await orderAPI.getAll({ page: 0, size: 100 });
+        const params = { 
+          page: pagination.orders.page, 
+          size: pagination.orders.size
+        };
+        if (selectedStatus) {
+          params.status = selectedStatus;
+        }
+        const response = await orderAPI.getAll(params);
         setOrders(response.data.data.content);
+        setPagination(prev => ({
+          ...prev,
+          orders: {
+            ...prev.orders,
+            totalPages: response.data.data.totalPages,
+            totalItems: response.data.data.totalItems
+          }
+        }));
       } else if (activeTab === 'inventory') {
-        const response = await inventoryAPI.getAll({ page: 0, size: 100 });
+        const params = { 
+          page: pagination.inventory.page, 
+          size: pagination.inventory.size
+        };
+        if (lowStockOnly) {
+          params.lowStock = true;
+        }
+        const response = await inventoryAPI.getAll(params);
         setInventory(response.data.data.content);
+        setPagination(prev => ({
+          ...prev,
+          inventory: {
+            ...prev.inventory,
+            totalPages: response.data.data.totalPages,
+            totalItems: response.data.data.totalItems
+          }
+        }));
       } else if (activeTab === 'users') {
-        const response = await userAPI.getAll({ page: 0, size: 100 });
+        const params = { 
+          page: pagination.users.page, 
+          size: pagination.users.size
+        };
+        const response = await userAPI.getAll(params);
         setUsers(response.data.data.content);
+        setPagination(prev => ({
+          ...prev,
+          users: {
+            ...prev.users,
+            totalPages: response.data.data.totalPages,
+            totalItems: response.data.data.totalItems
+          }
+        }));
       } else if (activeTab === 'performance') {
         const [dbRes, cacheRes] = await Promise.all([
           fetch('http://localhost:8080/api/performance/db-metrics', {
@@ -57,12 +265,13 @@ const AdminDashboard = () => {
         setDbMetrics(dbData.data || {});
         setCacheMetrics(cacheData.data || {});
       }
-    } catch (error) {
-      console.error('Error fetching data:', error);
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      setError(err);
     } finally {
       setLoading(false);
     }
-  }, [activeTab]);
+  };
 
   // Fetch categories and products on mount for dropdowns
   useEffect(() => {
@@ -72,8 +281,8 @@ const AdminDashboard = () => {
           categoryAPI.getAll({ page: 0, size: 100 }),
           productAPI.getAll({ page: 0, size: 100 })
         ]);
-        setCategories(categoriesRes.data.data.content);
-        setProducts(productsRes.data.data.content);
+        setCategoryOptions(categoriesRes.data.data.content);
+        setProductOptions(productsRes.data.data.content);
       } catch (error) {
         console.error('Error fetching categories and products:', error);
       }
@@ -81,19 +290,16 @@ const AdminDashboard = () => {
     fetchCategoriesAndProducts();
   }, []);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
   const handleUpdateOrderStatus = async (orderId, status) => {
     try {
       await orderAPI.updateStatus(orderId, { status });
       setEditingOrder(null);
       setNewStatus('');
-      fetchData(); // Refresh orders
-    } catch (error) {
-      console.error('Error updating order status:', error);
-      alert('Failed to update order status');
+      setError(null);
+      refreshCurrentTab(); // Refresh orders
+    } catch (err) {
+      console.error('Error updating order status:', err);
+      setError(err);
     }
   };
 
@@ -102,10 +308,11 @@ const AdminDashboard = () => {
       await inventoryAPI.update(inventoryId, { quantity: parseInt(quantity) });
       setEditingInventory(null);
       setNewQuantity('');
-      fetchData(); // Refresh inventory
-    } catch (error) {
-      console.error('Error updating inventory:', error);
-      alert('Failed to update inventory quantity');
+      setError(null);
+      refreshCurrentTab(); // Refresh inventory
+    } catch (err) {
+      console.error('Error updating inventory:', err);
+      setError(err);
     }
   };
 
@@ -114,10 +321,11 @@ const AdminDashboard = () => {
       await userAPI.update(userId, data);
       setEditingUser(null);
       setNewUserData({});
-      fetchData(); // Refresh users
-    } catch (error) {
-      console.error('Error updating user:', error);
-      alert('Failed to update user');
+      setError(null);
+      refreshCurrentTab(); // Refresh users
+    } catch (err) {
+      console.error('Error updating user:', err);
+      setError(err);
     }
   };
 
@@ -127,10 +335,11 @@ const AdminDashboard = () => {
     }
     try {
       await userAPI.delete(userId);
-      fetchData(); // Refresh users
-    } catch (error) {
-      console.error('Error deleting user:', error);
-      alert('Failed to delete user');
+      setError(null);
+      refreshCurrentTab(); // Refresh users
+    } catch (err) {
+      console.error('Error deleting user:', err);
+      setError(err);
     }
   };
 
@@ -140,10 +349,11 @@ const AdminDashboard = () => {
       await productAPI.create(newProduct);
       setShowAddProductModal(false);
       setNewProduct({ name: '', categoryId: '', price: '', sku: '', description: '' });
-      fetchData();
-    } catch (error) {
-      console.error('Error adding product:', error);
-      alert('Failed to add product');
+      setError(null);
+      refreshCurrentTab();
+    } catch (err) {
+      console.error('Error adding product:', err);
+      setError(err);
     }
   };
 
@@ -153,10 +363,11 @@ const AdminDashboard = () => {
       await categoryAPI.create(newCategory);
       setShowAddCategoryModal(false);
       setNewCategory({ name: '', description: '' });
-      fetchData();
-    } catch (error) {
-      console.error('Error adding category:', error);
-      alert('Failed to add category');
+      setError(null);
+      refreshCurrentTab();
+    } catch (err) {
+      console.error('Error adding category:', err);
+      setError(err);
     }
   };
 
@@ -166,10 +377,11 @@ const AdminDashboard = () => {
       await inventoryAPI.create(newInventory);
       setShowAddInventoryModal(false);
       setNewInventory({ productId: '', quantity: '', location: '' });
-      fetchData();
-    } catch (error) {
-      console.error('Error adding inventory:', error);
-      alert('Failed to add inventory');
+      setError(null);
+      refreshCurrentTab();
+    } catch (err) {
+      console.error('Error adding inventory:', err);
+      setError(err);
     }
   };
 
@@ -182,6 +394,147 @@ const AdminDashboard = () => {
     { id: 'performance', name: 'Performance' },
   ];
 
+  const handlePageChange = (tab, newPage) => {
+    setPagination(prev => ({
+      ...prev,
+      [tab]: { ...prev[tab], page: newPage }
+    }));
+  };
+
+  // Handle category filter change (triggers API call)
+  const handleCategoryChange = (value) => {
+    setSelectedCategory(value);
+    setPagination(prev => ({
+      ...prev,
+      products: { ...prev.products, page: 0 }
+    }));
+  };
+
+  // Handle status filter change (triggers API call)
+  const handleStatusChange = (value) => {
+    setSelectedStatus(value);
+    setPagination(prev => ({
+      ...prev,
+      orders: { ...prev.orders, page: 0 }
+    }));
+  };
+
+  // Handle role filter change (client-side filtering only)
+  const handleRoleChange = (value) => {
+    setSelectedRole(value);
+    // No API call needed - filtering is done client-side
+  };
+
+  // Handle low stock filter change (triggers API call)
+  const handleLowStockChange = (value) => {
+    setLowStockOnly(value);
+    setPagination(prev => ({
+      ...prev,
+      inventory: { ...prev.inventory, page: 0 }
+    }));
+  };
+
+  // Client-side filtering functions (like Products.js)
+  const filteredProducts = products.filter((product) => {
+    return product.name?.toLowerCase().includes(searchQuery.toLowerCase());
+  });
+
+  const filteredCategories = categories.filter((category) => {
+    return category.name?.toLowerCase().includes(searchQuery.toLowerCase());
+  });
+
+  const filteredOrders = orders.filter((order) => {
+    const searchLower = searchQuery.toLowerCase();
+    return (
+      order.id?.toString().includes(searchLower) ||
+      order.userEmail?.toLowerCase().includes(searchLower) ||
+      order.status?.toLowerCase().includes(searchLower)
+    );
+  });
+
+  const filteredInventory = inventory.filter((item) => {
+    return item.productName?.toLowerCase().includes(searchQuery.toLowerCase());
+  });
+
+  const filteredUsers = users.filter((user) => {
+    const searchLower = searchQuery.toLowerCase();
+    const matchesSearch = (
+      user.email?.toLowerCase().includes(searchLower) ||
+      user.firstName?.toLowerCase().includes(searchLower) ||
+      user.lastName?.toLowerCase().includes(searchLower)
+    );
+    const matchesRole = !selectedRole || user.role === selectedRole;
+    return matchesSearch && matchesRole;
+  });
+
+  const renderPagination = (tab) => {
+    const currentPagination = pagination[tab];
+    if (currentPagination.totalPages <= 1) return null;
+
+    return (
+      <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
+        <div className="flex-1 flex justify-between sm:hidden">
+          <button
+            onClick={() => handlePageChange(tab, currentPagination.page - 1)}
+            disabled={currentPagination.page === 0}
+            className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Previous
+          </button>
+          <button
+            onClick={() => handlePageChange(tab, currentPagination.page + 1)}
+            disabled={currentPagination.page >= currentPagination.totalPages - 1}
+            className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Next
+          </button>
+        </div>
+        <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm text-gray-700">
+              Showing <span className="font-medium">{currentPagination.page * currentPagination.size + 1}</span> to{' '}
+              <span className="font-medium">
+                {Math.min((currentPagination.page + 1) * currentPagination.size, currentPagination.totalItems || 0)}
+              </span> of{' '}
+              <span className="font-medium">{currentPagination.totalItems || 0}</span> results
+            </p>
+          </div>
+          <div>
+            <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+              <button
+                onClick={() => handlePageChange(tab, currentPagination.page - 1)}
+                disabled={currentPagination.page === 0}
+                className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronLeftIcon className="h-5 w-5" />
+              </button>
+              {[...Array(currentPagination.totalPages)].map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handlePageChange(tab, idx)}
+                  className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                    currentPagination.page === idx
+                      ? 'z-10 bg-primary-50 border-primary-500 text-primary-600'
+                      : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                  }`}
+                >
+                  {idx + 1}
+                </button>
+              ))}
+              <button
+                onClick={() => handlePageChange(tab, currentPagination.page + 1)}
+                disabled={currentPagination.page >= currentPagination.totalPages - 1}
+                className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronRightIcon className="h-5 w-5" />
+              </button>
+            </nav>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -189,6 +542,9 @@ const AdminDashboard = () => {
           <h1 className="text-4xl font-bold text-gray-900 mb-4">Admin Dashboard</h1>
           <p className="text-gray-600">Manage your e-commerce store</p>
         </div>
+
+        {/* Error Alert */}
+        <ErrorAlert error={error} onDismiss={() => setError(null)} />
 
         {/* Tabs */}
         <div className="bg-white rounded-xl shadow-sm mb-6">
@@ -231,6 +587,31 @@ const AdminDashboard = () => {
                         Add Product
                       </button>
                     </div>
+
+                    {/* Filters */}
+                    <div className="mb-4 flex gap-4">
+                      <div className="flex-1 relative">
+                        <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                        <input
+                          type="text"
+                          placeholder="Search products..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        />
+                      </div>
+                      <select
+                        value={selectedCategory}
+                        onChange={(e) => handleCategoryChange(e.target.value)}
+                        className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      >
+                        <option value="">All Categories</option>
+                        {categoryOptions.map((cat) => (
+                          <option key={cat.id} value={cat.id}>{cat.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
                     <div className="overflow-x-auto">
                       <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
@@ -243,7 +624,7 @@ const AdminDashboard = () => {
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                          {products.map((product) => (
+                          {filteredProducts.map((product) => (
                             <tr key={product.id}>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="text-sm font-medium text-gray-900">{product.name}</div>
@@ -276,6 +657,7 @@ const AdminDashboard = () => {
                         </tbody>
                       </table>
                     </div>
+                    {renderPagination('products')}
                   </div>
                 )}
 
@@ -292,8 +674,23 @@ const AdminDashboard = () => {
                         Add Category
                       </button>
                     </div>
+
+                    {/* Filters */}
+                    <div className="mb-4">
+                      <div className="relative">
+                        <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                        <input
+                          type="text"
+                          placeholder="Search categories..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        />
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {categories.map((category) => (
+                      {filteredCategories.map((category) => (
                         <div key={category.id} className="bg-gray-50 rounded-lg p-4">
                           <div className="flex justify-between items-start mb-2">
                             <h3 className="text-lg font-semibold text-gray-900">{category.name}</h3>
@@ -310,6 +707,7 @@ const AdminDashboard = () => {
                         </div>
                       ))}
                     </div>
+                    {renderPagination('categories')}
                   </div>
                 )}
 
@@ -326,6 +724,30 @@ const AdminDashboard = () => {
                         Add Inventory
                       </button>
                     </div>
+
+                    {/* Filters */}
+                    <div className="mb-4 flex gap-4">
+                      <div className="flex-1 relative">
+                        <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                        <input
+                          type="text"
+                          placeholder="Search inventory..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        />
+                      </div>
+                      <label className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                        <input
+                          type="checkbox"
+                          checked={lowStockOnly}
+                          onChange={(e) => handleLowStockChange(e.target.checked)}
+                          className="rounded text-primary-600 focus:ring-primary-500"
+                        />
+                        <span className="text-sm text-gray-700">Low Stock Only</span>
+                      </label>
+                    </div>
+
                     <div className="overflow-x-auto">
                       <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
@@ -338,7 +760,7 @@ const AdminDashboard = () => {
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                          {inventory.map((item) => (
+                          {filteredInventory.map((item) => (
                             <tr key={item.id}>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="text-sm font-medium text-gray-900">#{item.id}</div>
@@ -412,6 +834,7 @@ const AdminDashboard = () => {
                         </tbody>
                       </table>
                     </div>
+                    {renderPagination('inventory')}
                   </div>
                 )}
 
@@ -419,6 +842,33 @@ const AdminDashboard = () => {
                 {activeTab === 'orders' && (
                   <div>
                     <h2 className="text-xl font-semibold text-gray-900 mb-6">Orders Management</h2>
+
+                    {/* Filters */}
+                    <div className="mb-4 flex gap-4">
+                      <div className="flex-1 relative">
+                        <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                        <input
+                          type="text"
+                          placeholder="Search orders..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        />
+                      </div>
+                      <select
+                        value={selectedStatus}
+                        onChange={(e) => handleStatusChange(e.target.value)}
+                        className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      >
+                        <option value="">All Statuses</option>
+                        <option value="PENDING">PENDING</option>
+                        <option value="PROCESSING">PROCESSING</option>
+                        <option value="SHIPPED">SHIPPED</option>
+                        <option value="DELIVERED">DELIVERED</option>
+                        <option value="CANCELLED">CANCELLED</option>
+                      </select>
+                    </div>
+
                     <div className="overflow-x-auto">
                       <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
@@ -432,7 +882,7 @@ const AdminDashboard = () => {
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                          {orders.map((order) => (
+                          {filteredOrders.map((order) => (
                             <tr key={order.id}>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="text-sm font-medium text-gray-900">#{order.id}</div>
@@ -468,8 +918,19 @@ const AdminDashboard = () => {
                                   </span>
                                 )}
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="text-sm text-gray-500">{order.items?.length || 0} items</div>
+                              <td className="px-6 py-4">
+                                <div className="text-sm text-gray-500">
+                                  {order.items?.length || 0} items
+                                  {order.items && order.items.length > 0 && (
+                                    <ul className="mt-1 text-xs text-gray-400">
+                                      {order.items.map((item) => (
+                                        <li key={item.id}>
+                                          {item.productName} × {item.quantity}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  )}
+                                </div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 {editingOrder === order.id ? (
@@ -507,6 +968,7 @@ const AdminDashboard = () => {
                         </tbody>
                       </table>
                     </div>
+                    {renderPagination('orders')}
                   </div>
                 )}
 
@@ -514,6 +976,31 @@ const AdminDashboard = () => {
                 {activeTab === 'users' && (
                   <div>
                     <h2 className="text-xl font-semibold text-gray-900 mb-6">User Management</h2>
+
+                    {/* Filters */}
+                    <div className="mb-4 flex gap-4">
+                      <div className="flex-1 relative">
+                        <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                        <input
+                          type="text"
+                          placeholder="Search users..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        />
+                      </div>
+                      <select
+                        value={selectedRole}
+                        onChange={(e) => handleRoleChange(e.target.value)}
+                        className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      >
+                        <option value="">All Roles</option>
+                        <option value="CUSTOMER">CUSTOMER</option>
+                        <option value="SELLER">SELLER</option>
+                        <option value="ADMIN">ADMIN</option>
+                      </select>
+                    </div>
+
                     <div className="overflow-x-auto">
                       <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
@@ -526,22 +1013,31 @@ const AdminDashboard = () => {
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                          {users.map((user) => (
+                          {filteredUsers.map((user) => (
                             <tr key={user.id}>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="text-sm font-medium text-gray-900">#{user.id}</div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 {editingUser === user.id ? (
-                                  <input
-                                    type="text"
-                                    value={newUserData.name || ''}
-                                    onChange={(e) => setNewUserData({ ...newUserData, name: e.target.value })}
-                                    className="text-sm border border-gray-300 rounded px-2 py-1 w-full"
-                                    placeholder="Name"
-                                  />
+                                  <div className="flex gap-2">
+                                    <input
+                                      type="text"
+                                      value={newUserData.firstName || ''}
+                                      onChange={(e) => setNewUserData({ ...newUserData, firstName: e.target.value })}
+                                      className="text-sm border border-gray-300 rounded px-2 py-1 w-24"
+                                      placeholder="First Name"
+                                    />
+                                    <input
+                                      type="text"
+                                      value={newUserData.lastName || ''}
+                                      onChange={(e) => setNewUserData({ ...newUserData, lastName: e.target.value })}
+                                      className="text-sm border border-gray-300 rounded px-2 py-1 w-24"
+                                      placeholder="Last Name"
+                                    />
+                                  </div>
                                 ) : (
-                                  <div className="text-sm text-gray-900">{user.name}</div>
+                                  <div className="text-sm text-gray-900">{user.firstName} {user.lastName}</div>
                                 )}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
@@ -565,11 +1061,14 @@ const AdminDashboard = () => {
                                     className="text-sm border border-gray-300 rounded px-2 py-1"
                                   >
                                     <option value="CUSTOMER">CUSTOMER</option>
+                                    <option value="SELLER">SELLER</option>
                                     <option value="ADMIN">ADMIN</option>
                                   </select>
                                 ) : (
                                   <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                    user.role === 'ADMIN' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+                                    user.role === 'ADMIN' ? 'bg-purple-100 text-purple-800' : 
+                                    user.role === 'SELLER' ? 'bg-green-100 text-green-800' : 
+                                    'bg-blue-100 text-blue-800'
                                   }`}>
                                     {user.role}
                                   </span>
@@ -599,7 +1098,7 @@ const AdminDashboard = () => {
                                     <button
                                       onClick={() => {
                                         setEditingUser(user.id);
-                                        setNewUserData({ name: user.name, email: user.email, role: user.role });
+                                        setNewUserData({ firstName: user.firstName, lastName: user.lastName, email: user.email, role: user.role });
                                       }}
                                       className="text-primary-600 hover:text-primary-900"
                                     >
@@ -619,6 +1118,7 @@ const AdminDashboard = () => {
                         </tbody>
                       </table>
                     </div>
+                    {renderPagination('users')}
                   </div>
                 )}
 
@@ -716,7 +1216,7 @@ const AdminDashboard = () => {
                     className="w-full border border-gray-300 rounded-lg px-3 py-2"
                   >
                     <option value="">Select a category</option>
-                    {categories.map((cat) => (
+                    {categoryOptions.map((cat) => (
                       <option key={cat.id} value={cat.id}>{cat.name}</option>
                     ))}
                   </select>
@@ -843,7 +1343,7 @@ const AdminDashboard = () => {
                     className="w-full border border-gray-300 rounded-lg px-3 py-2"
                   >
                     <option value="">Select a product</option>
-                    {products.map((product) => (
+                    {productOptions.map((product) => (
                       <option key={product.id} value={product.id}>{product.name}</option>
                     ))}
                   </select>

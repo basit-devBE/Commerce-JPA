@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { authAPI } from '../services/api';
 
 const AuthContext = createContext(null);
@@ -6,6 +6,7 @@ const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [onLoginCallbacks, setOnLoginCallbacks] = useState([]);
 
   useEffect(() => {
     // Check if user is logged in
@@ -18,6 +19,11 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
+  // Register callback to be called after login
+  const registerLoginCallback = useCallback((callback) => {
+    setOnLoginCallbacks(prev => [...prev, callback]);
+  }, []);
+
   const login = async (credentials) => {
     const response = await authAPI.login(credentials);
     const { token, ...userData } = response.data.data;
@@ -25,6 +31,15 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('authToken', token);
     localStorage.setItem('user', JSON.stringify(userData));
     setUser(userData);
+    
+    // Execute login callbacks (e.g., sync cart)
+    for (const callback of onLoginCallbacks) {
+      try {
+        await callback();
+      } catch (err) {
+        console.error('Login callback error:', err);
+      }
+    }
     
     return response.data;
   };
@@ -36,6 +51,15 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('authToken', token);
     localStorage.setItem('user', JSON.stringify(user));
     setUser(user);
+    
+    // Execute login callbacks (e.g., sync cart)
+    for (const callback of onLoginCallbacks) {
+      try {
+        await callback();
+      } catch (err) {
+        console.error('Login callback error:', err);
+      }
+    }
     
     return response.data;
   };
@@ -60,6 +84,7 @@ export const AuthProvider = ({ children }) => {
       isSeller,
       isCustomer,
       loading,
+      registerLoginCallback,
     }}>
       {children}
     </AuthContext.Provider>

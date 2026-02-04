@@ -15,9 +15,14 @@ enum UserRole {
 type Product {
     id: ID!
     name: String!
+    categoryName: String
+    sku: String!
     price: Float!
     quantity: Int
-    categoryName: String
+    isAvailable: Boolean
+    description: String
+    createdAt: String
+    updatedAt: String
 }
 
 type Inventory {
@@ -37,9 +42,13 @@ type Category {
 type Order {
     id: ID!
     userId: ID!
+    userName: String
+    user: User
     totalAmount: Float!
     status: OrderStatus!
     items: [OrderItem!]!
+    createdAt: String
+    updatedAt: String
 }
 
 type OrderItem {
@@ -48,6 +57,31 @@ type OrderItem {
     productName: String!
     quantity: Int!
     totalPrice: Float!
+    product: Product
+}
+
+type Cart {
+    id: ID!
+    userId: ID!
+    user: User
+    items: [CartItem!]!
+    totalAmount: Float!
+    totalItems: Int!
+    createdAt: String
+    updatedAt: String
+}
+
+type CartItem {
+    id: ID!
+    productId: ID!
+    productName: String!
+    productPrice: Float!
+    productSku: String!
+    quantity: Int!
+    subtotal: Float!
+    product: Product
+    createdAt: String
+    updatedAt: String
 }
 
 enum OrderStatus {
@@ -100,19 +134,90 @@ input UpdateOrderInput {
     status: OrderStatus!
 }
 
+input AddToCartInput {
+    productId: ID!
+    quantity: Int!
+}
+
+input UpdateCartItemInput {
+    quantity: Int!
+}
+
+# Pagination input
+input PaginationInput {
+    page: Int = 0
+    size: Int = 10
+    sortBy: String = "id"
+    sortDirection: String = "ASC"
+}
+
+# Generic page info type
+type PageInfo {
+    currentPage: Int!
+    totalItems: Int!
+    totalPages: Int!
+    isLast: Boolean!
+    hasNext: Boolean!
+    hasPrevious: Boolean!
+}
+
+# Paginated response types
+type ProductPage {
+    content: [Product!]!
+    pageInfo: PageInfo!
+}
+
+type CategoryPage {
+    content: [Category!]!
+    pageInfo: PageInfo!
+}
+
+type OrderPage {
+    content: [Order!]!
+    pageInfo: PageInfo!
+}
+
+type InventoryPage {
+    content: [Inventory!]!
+    pageInfo: PageInfo!
+}
+
+type UserPage {
+    content: [User!]!
+    pageInfo: PageInfo!
+}
+
 type Query {
+    # User queries
     getUserById(id: ID!): User
     getAllUsers: [User!]!
+    usersPaginated(pagination: PaginationInput, search: String): UserPage!
+    
+    # Product queries
     allProducts: [Product]
     productById(id: ID!): Product
+    productsPaginated(pagination: PaginationInput, categoryId: ID, search: String): ProductPage!
+    
+    # Inventory queries
     allInventories: [Inventory!]!
     inventoryById(id: ID!): Inventory
     inventoryByProductId(productId: ID!): Inventory
+    inventoriesPaginated(pagination: PaginationInput, search: String): InventoryPage!
+    
+    # Category queries
     allCategories: [Category!]!
     categoryById(id: ID!): Category
+    categoriesPaginated(pagination: PaginationInput, search: String): CategoryPage!
+    
+    # Order queries
     allOrders: [Order!]!
     orderById(id: ID!): Order
     ordersByUserId(userId: ID!): [Order!]!
+    ordersPaginated(pagination: PaginationInput, status: OrderStatus, search: String): OrderPage!
+    ordersByUserIdPaginated(userId: ID!, pagination: PaginationInput): OrderPage!
+    
+    # Cart queries
+    cart(userId: ID!): Cart
 }
 
 type Mutation {
@@ -127,4 +232,8 @@ type Mutation {
     createOrder(input: AddOrderInput!): Order!
     updateOrderStatus(id: ID!, input: UpdateOrderInput!): Order!
     deleteOrder(id: ID!): Boolean!
+    addToCart(userId: ID!, input: AddToCartInput!): Cart!
+    updateCartItem(userId: ID!, productId: ID!, input: UpdateCartItemInput!): Cart!
+    removeFromCart(userId: ID!, productId: ID!): Cart!
+    clearCart(userId: ID!): Boolean!
 }
