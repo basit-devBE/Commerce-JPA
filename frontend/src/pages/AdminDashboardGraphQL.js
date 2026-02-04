@@ -111,6 +111,10 @@ const AdminDashboardGraphQL = () => {
     products: { categoryId: '', minPrice: '', maxPrice: '' },
     orders: { status: '' }
   });
+  const [debouncedFilters, setDebouncedFilters] = useState({
+    products: { categoryId: '', minPrice: '', maxPrice: '' },
+    orders: { status: '' }
+  });
   
   // Debounce search term
   useEffect(() => {
@@ -120,6 +124,15 @@ const AdminDashboardGraphQL = () => {
     
     return () => clearTimeout(timer);
   }, [searchTerm]);
+  
+  // Debounce filters (price inputs)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedFilters(filters);
+    }, 500); // Wait 500ms after user stops typing
+    
+    return () => clearTimeout(timer);
+  }, [filters]);
   
   // Field selection state for each tab
   const [selectedFields, setSelectedFields] = useState(() => {
@@ -306,7 +319,7 @@ const AdminDashboardGraphQL = () => {
     
     try {
       if (tab === 'products') {
-        const productFilters = filters.products;
+        const productFilters = debouncedFilters.products;
         let search = debouncedSearchTerm;
         
         // If price range is specified, we'll handle it client-side for now
@@ -336,7 +349,7 @@ const AdminDashboardGraphQL = () => {
         updatePagination('products', data.productsPaginated?.pageInfo || {});
         
       } else if (tab === 'orders') {
-        const orderFilters = filters.orders;
+        const orderFilters = debouncedFilters.orders;
         const data = await graphqlAPI.getOrdersPaginated(
           page,
           size,
@@ -422,7 +435,7 @@ const AdminDashboardGraphQL = () => {
   useEffect(() => {
     fetchPaginatedData(activeTab, pagination[activeTab]?.page || 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, selectedFields, debouncedSearchTerm, filters]);
+  }, [activeTab, selectedFields, debouncedSearchTerm, debouncedFilters]);
 
   // Page change handler
   const handlePageChange = (newPage) => {
