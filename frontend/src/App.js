@@ -15,9 +15,7 @@ import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
 import Orders from './pages/Orders';
 import Profile from './pages/Profile';
-import AdminDashboard from './pages/AdminDashboard';
 import AdminDashboardGraphQL from './pages/AdminDashboardGraphQL';
-import AdminDashboardComparison from './pages/AdminDashboardComparison';
 
 function App() {
   return (
@@ -66,23 +64,7 @@ function App() {
                 path="/admin"
                 element={
                   <ProtectedRoute adminOnly>
-                    <AdminDashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin/graphql"
-                element={
-                  <ProtectedRoute adminOnly>
                     <AdminDashboardGraphQL />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin/compare"
-                element={
-                  <ProtectedRoute adminOnly>
-                    <AdminDashboardComparison />
                   </ProtectedRoute>
                 }
               />

@@ -26,7 +26,22 @@ graphqlClient.interceptors.response.use(
   (response) => {
     if (response.data.errors) {
       console.error('GraphQL Errors:', response.data.errors);
-      throw new Error(response.data.errors[0].message);
+      
+      // Extract the most relevant error message
+      const error = response.data.errors[0];
+      let errorMessage = error.message;
+      
+      // Remove the UUID from INTERNAL_ERROR messages if present
+      if (errorMessage.includes('INTERNAL_ERROR for')) {
+        errorMessage = 'An internal error occurred. Please try again or contact support.';
+      }
+      
+      // Create a custom error with the GraphQL error details
+      const customError = new Error(errorMessage);
+      customError.graphQLErrors = response.data.errors;
+      customError.extensions = error.extensions;
+      
+      throw customError;
     }
     return response;
   },

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
@@ -19,22 +19,6 @@ const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [adminMenuOpen, setAdminMenuOpen] = useState(false);
-  const adminMenuRef = useRef(null);
-
-  // Close admin dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (adminMenuRef.current && !adminMenuRef.current.contains(event.target)) {
-        setAdminMenuOpen(false);
-      }
-    };
-
-    if (adminMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [adminMenuOpen]);
 
   const navigation = [
     { name: 'Home', href: '/', icon: HomeIcon },
@@ -72,60 +56,19 @@ const Navbar = () => {
                 </Link>
               ))}
               
-              {/* Admin Dropdown */}
+              {/* Admin Link */}
               {isAdmin() && (
-                <div className="relative" ref={adminMenuRef}>
-                  <button
-                    onClick={() => setAdminMenuOpen(!adminMenuOpen)}
-                    className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                      location.pathname.startsWith('/admin')
-                        ? 'text-primary-600 bg-primary-50'
-                        : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
-                    }`}
-                  >
-                    <Cog6ToothIcon className="h-5 w-5 mr-2" />
-                    Admin
-                  </button>
-                  
-                  {adminMenuOpen && (
-                    <div className="absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                      <Link
-                        to="/admin"
-                        onClick={() => setAdminMenuOpen(false)}
-                        className={`block px-4 py-2 text-sm ${
-                          location.pathname === '/admin'
-                            ? 'text-primary-600 bg-primary-50'
-                            : 'text-gray-700 hover:bg-gray-50'
-                        }`}
-                      >
-                        Dashboard (REST)
-                      </Link>
-                      <Link
-                        to="/admin/graphql"
-                        onClick={() => setAdminMenuOpen(false)}
-                        className={`block px-4 py-2 text-sm ${
-                          location.pathname === '/admin/graphql'
-                            ? 'text-primary-600 bg-primary-50'
-                            : 'text-gray-700 hover:bg-gray-50'
-                        }`}
-                      >
-                        Dashboard (GraphQL) ⚡
-                      </Link>
-                      <hr className="my-1 border-gray-200" />
-                      <Link
-                        to="/admin/compare"
-                        onClick={() => setAdminMenuOpen(false)}
-                        className={`block px-4 py-2 text-sm ${
-                          location.pathname === '/admin/compare'
-                            ? 'text-primary-600 bg-primary-50'
-                            : 'text-gray-700 hover:bg-gray-50'
-                        }`}
-                      >
-                        Compare Both
-                      </Link>
-                    </div>
-                  )}
-                </div>
+                <Link
+                  to="/admin"
+                  className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    location.pathname.startsWith('/admin')
+                      ? 'text-primary-600 bg-primary-50'
+                      : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
+                  }`}
+                >
+                  <Cog6ToothIcon className="h-5 w-5 mr-2" />
+                  Admin
+                </Link>
               )}
             </div>
           </div>
@@ -214,34 +157,20 @@ const Navbar = () => {
               </Link>
             ))}
             
-            {/* Admin Links for Mobile */}
+            {/* Admin Link for Mobile */}
             {isAdmin() && (
-              <>
-                <Link
-                  to="/admin"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`block px-3 py-2 text-base font-medium rounded-lg ${
-                    location.pathname === '/admin'
-                      ? 'text-primary-600 bg-primary-50'
-                      : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
-                  }`}
-                >
-                  <Cog6ToothIcon className="h-5 w-5 inline mr-2" />
-                  Admin (REST)
-                </Link>
-                <Link
-                  to="/admin/graphql"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`block px-3 py-2 text-base font-medium rounded-lg ${
-                    location.pathname === '/admin/graphql'
-                      ? 'text-primary-600 bg-primary-50'
-                      : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
-                  }`}
-                >
-                  <Cog6ToothIcon className="h-5 w-5 inline mr-2" />
-                  Admin (GraphQL) ⚡
-                </Link>
-              </>
+              <Link
+                to="/admin"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`block px-3 py-2 text-base font-medium rounded-lg ${
+                  location.pathname.startsWith('/admin')
+                    ? 'text-primary-600 bg-primary-50'
+                    : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
+                }`}
+              >
+                <Cog6ToothIcon className="h-5 w-5 inline mr-2" />
+                Admin Dashboard
+              </Link>
             )}
             
             {user ? (

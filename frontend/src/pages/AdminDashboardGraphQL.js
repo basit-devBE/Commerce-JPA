@@ -16,7 +16,22 @@ const executeGraphQL = async (query, variables = {}) => {
   });
   const result = await response.json();
   if (result.errors) {
-    throw new Error(result.errors[0].message);
+    // Extract the first error and create a meaningful error message
+    const error = result.errors[0];
+    let errorMessage = error.message;
+    
+    // Remove UUID from INTERNAL_ERROR messages
+    if (errorMessage.includes('INTERNAL_ERROR for')) {
+      errorMessage = 'An internal error occurred. Please try again or contact support.';
+    }
+    
+    // Create error with additional context
+    const customError = new Error(errorMessage);
+    customError.graphQLErrors = result.errors;
+    customError.path = error.path;
+    customError.extensions = error.extensions;
+    
+    throw customError;
   }
   return result.data;
 };
