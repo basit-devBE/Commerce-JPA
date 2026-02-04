@@ -23,6 +23,27 @@ type Product {
     description: String
     createdAt: String
     updatedAt: String
+    averageRating: Float
+    totalReviews: Int
+}
+
+type Review {
+    id: ID!
+    productId: ID!
+    productName: String
+    userId: ID!
+    userName: String!
+    userEmail: String
+    rating: Int!
+    comment: String
+    createdAt: String
+    updatedAt: String
+}
+
+type ProductReviewStats {
+    productId: ID!
+    averageRating: Float!
+    totalReviews: Int!
 }
 
 type Inventory {
@@ -98,6 +119,13 @@ input AddProductInput {
     categoryId: ID!
     sku: String!
     price: Float!
+}
+
+input ReviewInput {
+    productId: ID!
+    userId: ID!
+    rating: Int!
+    comment: String
 }
 
 input AddInventoryInput {
@@ -219,6 +247,13 @@ type Query {
     
     # Cart queries
     cart(userId: ID!): Cart
+    
+    # Review queries
+    allReviews: [Review!]!
+    reviewById(id: ID!): Review
+    reviewsByProductId(productId: ID!): [Review!]!
+    reviewsByUserId(userId: ID!): [Review!]!
+    productReviewStats(productId: ID!): ProductReviewStats!
 }
 
 type Mutation {
@@ -236,4 +271,9 @@ type Mutation {
     updateCartItem(userId: ID!, productId: ID!, input: UpdateCartItemInput!): Cart!
     removeFromCart(userId: ID!, productId: ID!): Cart!
     clearCart(userId: ID!): Boolean!
+    
+    # Review mutations
+    addReview(input: ReviewInput!): Review!
+    updateReview(id: ID!, rating: Int, comment: String): Review!
+    deleteReview(id: ID!): Boolean!
 }

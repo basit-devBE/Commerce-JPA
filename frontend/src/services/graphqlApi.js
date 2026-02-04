@@ -788,4 +788,111 @@ const graphqlApi = {
   clearCart,
 };
 
+// ==================== REVIEW QUERIES ====================
+
+export const getAllReviews = () => executeQuery(`
+  query {
+    allReviews {
+      id
+      productId
+      productName
+      userId
+      userName
+      userEmail
+      rating
+      comment
+      createdAt
+      updatedAt
+    }
+  }
+`);
+
+export const getReviewById = (id) => executeQuery(`
+  query GetReview($id: ID!) {
+    reviewById(id: $id) {
+      id
+      productId
+      productName
+      userId
+      userName
+      userEmail
+      rating
+      comment
+      createdAt
+      updatedAt
+    }
+  }
+`, { id });
+
+export const getReviewsByProductId = (productId) => executeQuery(`
+  query GetReviewsByProduct($productId: ID!) {
+    reviewsByProductId(productId: $productId) {
+      id
+      userId
+      userName
+      userEmail
+      rating
+      comment
+      createdAt
+      updatedAt
+    }
+  }
+`, { productId });
+
+export const getReviewsByUserId = (userId) => executeQuery(`
+  query GetReviewsByUser($userId: ID!) {
+    reviewsByUserId(userId: $userId) {
+      id
+      productId
+      productName
+      rating
+      comment
+      createdAt
+      updatedAt
+    }
+  }
+`, { userId });
+
+export const getProductReviewStats = (productId) => executeQuery(`
+  query GetProductReviewStats($productId: ID!) {
+    productReviewStats(productId: $productId) {
+      productId
+      averageRating
+      totalReviews
+    }
+  }
+`, { productId });
+
+export const addReview = (input) => executeQuery(`
+  mutation AddReview($input: ReviewInput!) {
+    addReview(input: $input) {
+      id
+      productId
+      productName
+      userId
+      userName
+      rating
+      comment
+      createdAt
+    }
+  }
+`, { input });
+
+export const updateReview = (id, rating, comment) => executeQuery(`
+  mutation UpdateReview($id: ID!, $rating: Int, $comment: String) {
+    updateReview(id: $id, rating: $rating, comment: $comment) {
+      id
+      rating
+      comment
+      updatedAt
+    }
+  }
+`, { id, rating, comment });
+
+export const deleteReview = (id) => executeQuery(`
+  mutation DeleteReview($id: ID!) {
+    deleteReview(id: $id)
+  }
+`, { id });
+
 export default graphqlApi;

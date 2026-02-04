@@ -79,6 +79,18 @@ const AVAILABLE_FIELDS = {
     { key: 'phoneNumber', label: 'Phone', default: false },
     { key: 'address', label: 'Address', default: false },
   ],
+  reviews: [
+    { key: 'id', label: 'ID', default: true },
+    { key: 'productId', label: 'Product ID', default: false },
+    { key: 'productName', label: 'Product', default: true },
+    { key: 'userId', label: 'User ID', default: false },
+    { key: 'userName', label: 'User', default: true },
+    { key: 'userEmail', label: 'Email', default: false },
+    { key: 'rating', label: 'Rating', default: true },
+    { key: 'comment', label: 'Comment', default: true },
+    { key: 'createdAt', label: 'Created At', default: true },
+    { key: 'updatedAt', label: 'Updated At', default: false },
+  ],
 };
 
 const AdminDashboardGraphQL = () => {
@@ -88,6 +100,7 @@ const AdminDashboardGraphQL = () => {
   const [orders, setOrders] = useState([]);
   const [inventory, setInventory] = useState([]);
   const [users, setUsers] = useState([]);
+  const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   
@@ -126,6 +139,7 @@ const AdminDashboardGraphQL = () => {
     orders: { page: 0, size: 10, totalPages: 0, totalItems: 0, hasNext: false, hasPrevious: false },
     inventory: { page: 0, size: 10, totalPages: 0, totalItems: 0, hasNext: false, hasPrevious: false },
     users: { page: 0, size: 10, totalPages: 0, totalItems: 0, hasNext: false, hasPrevious: false },
+    reviews: { page: 0, size: 10, totalPages: 0, totalItems: 0, hasNext: false, hasPrevious: false },
   });
   
   // Edit states
@@ -372,6 +386,17 @@ const AdminDashboardGraphQL = () => {
         const data = await executeGraphQL(query, variables);
         setUsers(data.usersPaginated?.content || []);
         updatePagination('users', data.usersPaginated?.pageInfo || {});
+        
+      } else if (tab === 'reviews') {
+        const data = await graphqlAPI.getAllReviews();
+        setReviews(data.allReviews || []);
+        // Since we don't have paginated reviews endpoint yet, simulate pagination
+        updatePagination('reviews', {
+          totalPages: 1,
+          totalItems: data.allReviews?.length || 0,
+          hasNext: false,
+          hasPrevious: false
+        });
       }
     } catch (err) {
       console.error('Error fetching data:', err);
@@ -586,6 +611,20 @@ const AdminDashboardGraphQL = () => {
     }
   };
 
+  const handleDeleteReview = async (reviewId) => {
+    if (!window.confirm('Are you sure you want to delete this review?')) {
+      return;
+    }
+    try {
+      await graphqlAPI.deleteReview(reviewId);
+      setError(null);
+      refreshCurrentTab();
+    } catch (err) {
+      console.error('Error deleting review:', err);
+      setError(err);
+    }
+  };
+
   const addOrderItem = () => {
     setNewOrder({
       ...newOrder,
@@ -750,6 +789,23 @@ const AdminDashboardGraphQL = () => {
     }
     if (fieldKey === 'createdAt' || fieldKey === 'updatedAt') {
       return new Date(value).toLocaleDateString();
+    }
+    if (fieldKey === 'rating') {
+      // Render star rating
+      return (
+        <div className="flex items-center gap-1">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <span key={star} className={star <= value ? 'text-yellow-400' : 'text-gray-300'}>
+              ★
+            </span>
+          ))}
+          <span className="ml-1 text-sm text-gray-600">({value})</span>
+        </div>
+      );
+    }
+    if (fieldKey === 'comment' && String(value).length > 100) {
+      // Truncate long comments
+      return String(value).substring(0, 100) + '...';
     }
     if (fieldKey === 'status') {
       const statusColors = {
@@ -1260,6 +1316,31 @@ const AdminDashboardGraphQL = () => {
     </div>
   );
 
+  const renderReviews = () => (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-gray-800">Reviews (GraphQL)</h2>
+      </div>
+
+      <FieldSelector />
+
+      <DynamicTable 
+        data={reviews} 
+        tab="reviews"
+        actions={(review) => (
+          <button
+            onClick={() => handleDeleteReview(review.id)}
+            className="text-red-600 hover:text-red-800"
+          >
+            <TrashIcon className="w-5 h-5" />
+          </button>
+        )}
+      />
+      
+      <PaginationControls tab="reviews" />
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -1278,7 +1359,7 @@ const AdminDashboardGraphQL = () => {
         <div className="bg-white rounded-lg shadow mb-6">
           <div className="border-b border-gray-200">
             <nav className="flex space-x-8 px-6" aria-label="Tabs">
-              {['products', 'categories', 'orders', 'inventory', 'users'].map((tab) => (
+              {['products', 'categories', 'orders', 'inventory', 'users', 'reviews'].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -1309,6 +1390,7 @@ const AdminDashboardGraphQL = () => {
               {activeTab === 'orders' && renderOrders()}
               {activeTab === 'inventory' && renderInventory()}
               {activeTab === 'users' && renderUsers()}
+              {activeTab === 'reviews' && renderReviews()}
             </>
           )}
         </div>

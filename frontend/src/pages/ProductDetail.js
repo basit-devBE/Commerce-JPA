@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { productAPI } from '../services/api';
 import { useCart } from '../context/CartContext';
 import { ShoppingCartIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
+import ProductReviews from '../components/ProductReviews';
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -170,6 +171,11 @@ const ProductDetail = () => {
                 </dl>
               </div>
             </div>
+          </div>
+          
+          {/* Product Reviews Section */}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <ProductReviews productId={id} />
           </div>
         </div>
       </div>
