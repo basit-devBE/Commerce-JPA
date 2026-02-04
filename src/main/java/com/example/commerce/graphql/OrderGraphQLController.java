@@ -3,13 +3,16 @@ package com.example.commerce.graphql;
 import com.example.commerce.dtos.requests.AddOrderDTO;
 import com.example.commerce.dtos.requests.OrderItemDTO;
 import com.example.commerce.dtos.requests.UpdateOrderDTO;
-import com.example.commerce.dtos.responses.GraphQLPageInfo;
 import com.example.commerce.dtos.responses.GraphQLPagedResponse;
 import com.example.commerce.dtos.responses.OrderItemResponseDTO;
 import com.example.commerce.dtos.responses.OrderResponseDTO;
 import com.example.commerce.dtos.responses.ProductResponseDTO;
 import com.example.commerce.entities.UserEntity;
 import com.example.commerce.enums.OrderStatus;
+import com.example.commerce.graphql.input.OrderInput.CreateOrderInput;
+import com.example.commerce.graphql.input.OrderInput.UpdateOrderStatusInput;
+import com.example.commerce.graphql.input.PaginationInput;
+import com.example.commerce.graphql.utils.GraphQLResponseMapper;
 import com.example.commerce.repositories.UserRepository;
 import com.example.commerce.services.OrderService;
 import com.example.commerce.services.ProductService;
@@ -33,13 +36,16 @@ public class OrderGraphQLController {
     private final OrderService orderService;
     private final ProductService productService;
     private final UserRepository userRepository;
+    private final GraphQLResponseMapper responseMapper;
 
     public OrderGraphQLController(OrderService orderService,
                                    ProductService productService,
-                                   UserRepository userRepository) {
+                                   UserRepository userRepository,
+                                   GraphQLResponseMapper responseMapper) {
         this.orderService = orderService;
         this.productService = productService;
         this.userRepository = userRepository;
+        this.responseMapper = responseMapper;
     }
 
     // ==================== QUERIES ====================
@@ -65,10 +71,10 @@ public class OrderGraphQLController {
             @Argument OrderStatus status,
             @Argument String search) {
         
-        int page = pagination != null && pagination.page() != null ? pagination.page() : 0;
-        int size = pagination != null && pagination.size() != null ? pagination.size() : 10;
-        String sortBy = pagination != null && pagination.sortBy() != null ? pagination.sortBy() : "id";
-        String sortDir = pagination != null && pagination.sortDirection() != null ? pagination.sortDirection() : "DESC";
+        int page = pagination.getPage();
+        int size = pagination.getSize();
+        String sortBy = pagination.getSortBy();
+        String sortDir = pagination.getSortDirection();
         
         Sort sort = sortDir.equalsIgnoreCase("DESC") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
@@ -85,18 +91,16 @@ public class OrderGraphQLController {
             List<OrderResponseDTO> filtered = ordersPage.getContent().stream()
                     .filter(o -> o.getStatus() == status)
                     .collect(Collectors.toList());
-            GraphQLPageInfo pageInfo = new GraphQLPageInfo(
-                ordersPage.getNumber(),
-                filtered.size(),
-                ordersPage.getTotalPages(),
-                ordersPage.isLast(),
-                ordersPage.hasNext(),
-                ordersPage.hasPrevious()
+            return responseMapper.toGraphQLPagedResponse(
+                new org.springframework.data.domain.PageImpl<>(
+                    filtered,
+                    pageable,
+                    ordersPage.getTotalElements()
+                )
             );
-            return GraphQLPagedResponse.of(filtered, pageInfo);
         }
         
-        return toGraphQLPagedResponse(ordersPage);
+        return responseMapper.toGraphQLPagedResponse(ordersPage);
     }
 
     @QueryMapping
@@ -104,22 +108,22 @@ public class OrderGraphQLController {
             @Argument Long userId,
             @Argument PaginationInput pagination) {
         
-        int page = pagination != null && pagination.page() != null ? pagination.page() : 0;
-        int size = pagination != null && pagination.size() != null ? pagination.size() : 10;
-        String sortBy = pagination != null && pagination.sortBy() != null ? pagination.sortBy() : "id";
-        String sortDir = pagination != null && pagination.sortDirection() != null ? pagination.sortDirection() : "DESC";
+        int page = pagination.getPage();
+        int size = pagination.getSize();
+        String sortBy = pagination.getSortBy();
+        String sortDir = pagination.getSortDirection();
         
         Sort sort = sortDir.equalsIgnoreCase("DESC") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
         
         Page<OrderResponseDTO> ordersPage = orderService.getOrdersByUserId(userId, pageable);
-        return toGraphQLPagedResponse(ordersPage);
+        return responseMapper.toGraphQLPagedResponse(ordersPage);
     }
 
     // ==================== MUTATIONS ====================
 
     @MutationMapping
-    public OrderResponseDTO createOrder(@Argument AddOrderInput input) {
+    public OrderResponseDTO createOrder(@Argument CreateOrderInput input) {
         AddOrderDTO dto = new AddOrderDTO();
         dto.setUserId(input.userId());
         dto.setItems(input.items().stream()
@@ -134,7 +138,7 @@ public class OrderGraphQLController {
     }
 
     @MutationMapping
-    public OrderResponseDTO updateOrderStatus(@Argument Long id, @Argument UpdateOrderInput input) {
+    public OrderResponseDTO updateOrderStatus(@Argument Long id, @Argument UpdateOrderStatusInput input) {
         UpdateOrderDTO dto = new UpdateOrderDTO();
         dto.setStatus(input.status());
         return orderService.updateOrderStatus(id, dto);
@@ -177,23 +181,4 @@ public class OrderGraphQLController {
         map.put("role", user.getRole().name());
         return map;
     }
-
-    private <T> GraphQLPagedResponse<T> toGraphQLPagedResponse(Page<T> page) {
-        GraphQLPageInfo pageInfo = new GraphQLPageInfo(
-            page.getNumber(),
-            (int) page.getTotalElements(),
-            page.getTotalPages(),
-            page.isLast(),
-            page.hasNext(),
-            page.hasPrevious()
-        );
-        return GraphQLPagedResponse.of(page.getContent(), pageInfo);
-    }
-
-    // ==================== INPUT RECORDS ====================
-
-    public record AddOrderInput(Long userId, List<OrderItemInput> items) {}
-    public record OrderItemInput(Long productId, Integer quantity) {}
-    public record UpdateOrderInput(OrderStatus status) {}
-    public record PaginationInput(Integer page, Integer size, String sortBy, String sortDirection) {}
 }

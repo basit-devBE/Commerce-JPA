@@ -2,9 +2,12 @@ package com.example.commerce.graphql;
 
 import com.example.commerce.dtos.requests.AddInventoryDTO;
 import com.example.commerce.dtos.requests.UpdateInventoryDTO;
-import com.example.commerce.dtos.responses.GraphQLPageInfo;
 import com.example.commerce.dtos.responses.GraphQLPagedResponse;
 import com.example.commerce.dtos.responses.InventoryResponseDTO;
+import com.example.commerce.graphql.input.InventoryInput.AddInventoryInput;
+import com.example.commerce.graphql.input.InventoryInput.UpdateInventoryInput;
+import com.example.commerce.graphql.input.PaginationInput;
+import com.example.commerce.graphql.utils.GraphQLResponseMapper;
 import com.example.commerce.services.InventoryService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -20,9 +23,11 @@ import java.util.List;
 @Controller
 public class InventoryGraphQLController {
     private final InventoryService inventoryService;
+    private final GraphQLResponseMapper responseMapper;
 
-    public InventoryGraphQLController(InventoryService inventoryService) {
+    public InventoryGraphQLController(InventoryService inventoryService, GraphQLResponseMapper responseMapper) {
         this.inventoryService = inventoryService;
+        this.responseMapper = responseMapper;
     }
 
     // ==================== QUERIES ====================
@@ -44,10 +49,10 @@ public class InventoryGraphQLController {
 
     @QueryMapping
     public GraphQLPagedResponse<InventoryResponseDTO> inventoriesPaginated(@Argument PaginationInput pagination, @Argument String search) {
-        int page = pagination != null && pagination.page() != null ? pagination.page() : 0;
-        int size = pagination != null && pagination.size() != null ? pagination.size() : 10;
-        String sortBy = pagination != null && pagination.sortBy() != null ? pagination.sortBy() : "id";
-        String sortDir = pagination != null && pagination.sortDirection() != null ? pagination.sortDirection() : "ASC";
+        int page = pagination.getPage();
+        int size = pagination.getSize();
+        String sortBy = pagination.getSortBy();
+        String sortDir = pagination.getSortDirection();
         
         Sort sort = sortDir.equalsIgnoreCase("DESC") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
@@ -58,7 +63,7 @@ public class InventoryGraphQLController {
         } else {
             inventoriesPage = inventoryService.getAllInventories(pageable);
         }
-        return toGraphQLPagedResponse(inventoriesPage);
+        return responseMapper.toGraphQLPagedResponse(inventoriesPage);
     }
 
     // ==================== MUTATIONS ====================
@@ -85,24 +90,5 @@ public class InventoryGraphQLController {
         inventoryService.deleteInventory(id);
         return true;
     }
-
-    // ==================== HELPER METHODS ====================
-
-    private <T> GraphQLPagedResponse<T> toGraphQLPagedResponse(Page<T> page) {
-        GraphQLPageInfo pageInfo = new GraphQLPageInfo(
-            page.getNumber(),
-            (int) page.getTotalElements(),
-            page.getTotalPages(),
-            page.isLast(),
-            page.hasNext(),
-            page.hasPrevious()
-        );
-        return GraphQLPagedResponse.of(page.getContent(), pageInfo);
-    }
-
-    // ==================== INPUT RECORDS ====================
-
-    public record AddInventoryInput(Long productId, Integer quantity, String location) {}
-    public record UpdateInventoryInput(Integer quantity, String location) {}
-    public record PaginationInput(Integer page, Integer size, String sortBy, String sortDirection) {}
 }
+

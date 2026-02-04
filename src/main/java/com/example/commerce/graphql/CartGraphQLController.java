@@ -6,6 +6,8 @@ import com.example.commerce.dtos.responses.CartItemResponseDTO;
 import com.example.commerce.dtos.responses.CartResponseDTO;
 import com.example.commerce.dtos.responses.ProductResponseDTO;
 import com.example.commerce.entities.UserEntity;
+import com.example.commerce.graphql.input.CartInput.AddToCartInput;
+import com.example.commerce.graphql.input.CartInput.UpdateCartItemInput;
 import com.example.commerce.repositories.UserRepository;
 import com.example.commerce.services.CartService;
 import com.example.commerce.services.ProductService;
@@ -101,9 +103,4 @@ public class CartGraphQLController {
         map.put("role", user.getRole().name());
         return map;
     }
-
-    // ==================== INPUT RECORDS ====================
-
-    public record AddToCartInput(Long productId, Integer quantity) {}
-    public record UpdateCartItemInput(Integer quantity) {}
 }

@@ -3,8 +3,11 @@ package com.example.commerce.graphql;
 import com.example.commerce.dtos.requests.AddCategoryDTO;
 import com.example.commerce.dtos.requests.UpdateCategoryDTO;
 import com.example.commerce.dtos.responses.CategoryResponseDTO;
-import com.example.commerce.dtos.responses.GraphQLPageInfo;
 import com.example.commerce.dtos.responses.GraphQLPagedResponse;
+import com.example.commerce.graphql.input.CategoryInput.AddCategoryInput;
+import com.example.commerce.graphql.input.CategoryInput.UpdateCategoryInput;
+import com.example.commerce.graphql.input.PaginationInput;
+import com.example.commerce.graphql.utils.GraphQLResponseMapper;
 import com.example.commerce.services.CategoryService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -20,9 +23,11 @@ import java.util.List;
 @Controller
 public class CategoryGraphQLController {
     private final CategoryService categoryService;
+    private final GraphQLResponseMapper responseMapper;
 
-    public CategoryGraphQLController(CategoryService categoryService) {
+    public CategoryGraphQLController(CategoryService categoryService, GraphQLResponseMapper responseMapper) {
         this.categoryService = categoryService;
+        this.responseMapper = responseMapper;
     }
 
     // ==================== QUERIES ====================
@@ -39,10 +44,10 @@ public class CategoryGraphQLController {
 
     @QueryMapping
     public GraphQLPagedResponse<CategoryResponseDTO> categoriesPaginated(@Argument PaginationInput pagination, @Argument String search) {
-        int page = pagination != null && pagination.page() != null ? pagination.page() : 0;
-        int size = pagination != null && pagination.size() != null ? pagination.size() : 10;
-        String sortBy = pagination != null && pagination.sortBy() != null ? pagination.sortBy() : "id";
-        String sortDir = pagination != null && pagination.sortDirection() != null ? pagination.sortDirection() : "ASC";
+        int page = pagination.getPage();
+        int size = pagination.getSize();
+        String sortBy = pagination.getSortBy();
+        String sortDir = pagination.getSortDirection();
         
         Sort sort = sortDir.equalsIgnoreCase("DESC") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
@@ -53,7 +58,7 @@ public class CategoryGraphQLController {
         } else {
             categoriesPage = categoryService.getAllCategories(pageable);
         }
-        return toGraphQLPagedResponse(categoriesPage);
+        return responseMapper.toGraphQLPagedResponse(categoriesPage);
     }
 
     // ==================== MUTATIONS ====================
@@ -79,24 +84,5 @@ public class CategoryGraphQLController {
         categoryService.deleteCategory(id);
         return true;
     }
-
-    // ==================== HELPER METHODS ====================
-
-    private <T> GraphQLPagedResponse<T> toGraphQLPagedResponse(Page<T> page) {
-        GraphQLPageInfo pageInfo = new GraphQLPageInfo(
-            page.getNumber(),
-            (int) page.getTotalElements(),
-            page.getTotalPages(),
-            page.isLast(),
-            page.hasNext(),
-            page.hasPrevious()
-        );
-        return GraphQLPagedResponse.of(page.getContent(), pageInfo);
-    }
-
-    // ==================== INPUT RECORDS ====================
-
-    public record AddCategoryInput(String name, String description) {}
-    public record UpdateCategoryInput(String name, String description) {}
-    public record PaginationInput(Integer page, Integer size, String sortBy, String sortDirection) {}
 }
+

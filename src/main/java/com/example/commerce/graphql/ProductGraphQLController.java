@@ -1,10 +1,12 @@
 package com.example.commerce.graphql;
 
 import com.example.commerce.dtos.requests.AddProductDTO;
-import com.example.commerce.dtos.responses.GraphQLPageInfo;
 import com.example.commerce.dtos.responses.GraphQLPagedResponse;
 import com.example.commerce.dtos.responses.PagedResponse;
 import com.example.commerce.dtos.responses.ProductResponseDTO;
+import com.example.commerce.graphql.input.PaginationInput;
+import com.example.commerce.graphql.input.ProductInput.AddProductInput;
+import com.example.commerce.graphql.utils.GraphQLResponseMapper;
 import com.example.commerce.services.ProductService;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -19,9 +21,11 @@ import java.util.List;
 @Controller
 public class ProductGraphQLController {
     private final ProductService productService;
+    private final GraphQLResponseMapper responseMapper;
 
-    public ProductGraphQLController(ProductService productService) {
+    public ProductGraphQLController(ProductService productService, GraphQLResponseMapper responseMapper) {
         this.productService = productService;
+        this.responseMapper = responseMapper;
     }
 
     // ==================== QUERIES ====================
@@ -42,10 +46,10 @@ public class ProductGraphQLController {
             @Argument Long categoryId,
             @Argument String search) {
         
-        int page = pagination != null && pagination.page() != null ? pagination.page() : 0;
-        int size = pagination != null && pagination.size() != null ? pagination.size() : 10;
-        String sortBy = pagination != null && pagination.sortBy() != null ? pagination.sortBy() : "id";
-        String sortDir = pagination != null && pagination.sortDirection() != null ? pagination.sortDirection() : "ASC";
+        int page = pagination.getPage();
+        int size = pagination.getSize();
+        String sortBy = pagination.getSortBy();
+        String sortDir = pagination.getSortDirection();
         
         Sort sort = sortDir.equalsIgnoreCase("DESC") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
@@ -59,7 +63,7 @@ public class ProductGraphQLController {
             pagedResponse = productService.getAllProducts(pageable);
         }
         
-        return toGraphQLPagedResponse(pagedResponse);
+        return responseMapper.toGraphQLPagedResponse(pagedResponse);
     }
 
     // ==================== MUTATIONS ====================
@@ -79,23 +83,4 @@ public class ProductGraphQLController {
         productService.deleteProduct(id);
         return true;
     }
-
-    // ==================== HELPER METHODS ====================
-
-    private <T> GraphQLPagedResponse<T> toGraphQLPagedResponse(PagedResponse<T> pagedResponse) {
-        GraphQLPageInfo pageInfo = new GraphQLPageInfo(
-            pagedResponse.currentPage(),
-            pagedResponse.totalItems(),
-            pagedResponse.totalPages(),
-            pagedResponse.isLast(),
-            !pagedResponse.isLast(),
-            pagedResponse.currentPage() > 0
-        );
-        return GraphQLPagedResponse.of(pagedResponse.content(), pageInfo);
-    }
-
-    // ==================== INPUT RECORDS ====================
-
-    public record AddProductInput(String name, Long categoryId, String sku, Double price) {}
-    public record PaginationInput(Integer page, Integer size, String sortBy, String sortDirection) {}
 }
