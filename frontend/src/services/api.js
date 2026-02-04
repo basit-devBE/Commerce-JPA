@@ -112,4 +112,11 @@ export const cartAPI = {
   clear: () => api.delete('/cart/clear'),
 };
 
+// Performance APIs
+export const performanceAPI = {
+  getDbMetrics: () => api.get('/performance/db-metrics'),
+  getCacheMetrics: () => api.get('/performance/cache-metrics'),
+  clearMetrics: () => api.delete('/performance/clear-metrics'),
+};
+
 export default api;

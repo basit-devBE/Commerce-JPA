@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import * as graphqlAPI from '../services/graphqlApi';
+import { performanceAPI } from '../services/api';
 import { PlusIcon, PencilIcon, TrashIcon, ChevronLeftIcon, ChevronRightIcon, ArrowPathIcon, AdjustmentsHorizontalIcon } from '@heroicons/react/24/outline';
 import ErrorAlert from '../components/ErrorAlert';
 
@@ -101,6 +102,8 @@ const AdminDashboardGraphQL = () => {
   const [inventory, setInventory] = useState([]);
   const [users, setUsers] = useState([]);
   const [reviews, setReviews] = useState([]);
+  const [dbMetrics, setDbMetrics] = useState({});
+  const [cacheMetrics, setCacheMetrics] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   
@@ -407,6 +410,21 @@ const AdminDashboardGraphQL = () => {
         updatePagination('reviews', {
           totalPages: 1,
           totalItems: data.allReviews?.length || 0,
+          hasNext: false,
+          hasPrevious: false
+        });
+        
+      } else if (tab === 'performance') {
+        // Fetch performance metrics using REST API
+        const [dbResponse, cacheResponse] = await Promise.all([
+          performanceAPI.getDbMetrics(),
+          performanceAPI.getCacheMetrics()
+        ]);
+        setDbMetrics(dbResponse.data.data || {});
+        setCacheMetrics(cacheResponse.data.data || {});
+        updatePagination('performance', {
+          totalPages: 1,
+          totalItems: 0,
           hasNext: false,
           hasPrevious: false
         });
@@ -1354,6 +1372,171 @@ const AdminDashboardGraphQL = () => {
     </div>
   );
 
+  const renderPerformance = () => {
+    // Calculate aggregate DB metrics
+    const dbEntries = Object.entries(dbMetrics);
+    const totalQueries = dbEntries.reduce((sum, [_, metrics]) => sum + (metrics.count || 0), 0);
+    const totalQueryTime = dbEntries.reduce((sum, [_, metrics]) => sum + (metrics.totalTime || 0), 0);
+    const avgQueryTime = totalQueries > 0 ? totalQueryTime / totalQueries : 0;
+    const slowestQuery = dbEntries.reduce((max, [name, metrics]) => 
+      metrics.maxTime > (max?.maxTime || 0) ? { name, ...metrics } : max, null);
+    const fastestQuery = dbEntries.reduce((min, [name, metrics]) => 
+      metrics.minTime < (min?.minTime || Infinity) ? { name, ...metrics } : min, null);
+
+    // Sort queries by max time for slowest queries display
+    const sortedQueries = [...dbEntries]
+      .sort((a, b) => (b[1].maxTime || 0) - (a[1].maxTime || 0))
+      .slice(0, 5);
+
+    // Calculate aggregate cache metrics
+    const cacheEntries = Object.entries(cacheMetrics);
+    const totalHits = cacheEntries.reduce((sum, [_, metrics]) => sum + (metrics.hits || 0), 0);
+    const totalMisses = cacheEntries.reduce((sum, [_, metrics]) => sum + (metrics.misses || 0), 0);
+    const totalRequests = totalHits + totalMisses;
+    const overallHitRate = totalRequests > 0 ? (totalHits / totalRequests) * 100 : 0;
+
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold text-gray-800">Performance Metrics (REST)</h2>
+          <button
+            onClick={async () => {
+              try {
+                await performanceAPI.clearMetrics();
+                await fetchPaginatedData('performance');
+              } catch (err) {
+                console.error('Failed to clear metrics:', err);
+              }
+            }}
+            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
+          >
+            Clear Metrics
+          </button>
+        </div>
+
+        {/* Database Metrics */}
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h3 className="text-xl font-semibold text-gray-800 mb-4">Database Metrics</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <MetricCard 
+              label="Total Queries" 
+              value={totalQueries}
+              icon="📊"
+            />
+            <MetricCard 
+              label="Avg Query Time" 
+              value={`${avgQueryTime.toFixed(2)} ms`}
+              icon="⏱️"
+            />
+            <MetricCard 
+              label="Slowest Query Time" 
+              value={`${slowestQuery?.maxTime || 0} ms`}
+              icon="🐌"
+            />
+            <MetricCard 
+              label="Fastest Query Time" 
+              value={`${fastestQuery?.minTime || 0} ms`}
+              icon="⚡"
+            />
+            <MetricCard 
+              label="Total Query Time" 
+              value={`${totalQueryTime.toFixed(2)} ms`}
+              icon="📈"
+            />
+            <MetricCard 
+              label="Unique Queries" 
+              value={dbEntries.length}
+              icon="🔍"
+            />
+          </div>
+
+          {sortedQueries.length > 0 && (
+            <div className="mt-6">
+              <h4 className="text-lg font-semibold text-gray-700 mb-3">Top 5 Slowest Queries</h4>
+              <div className="space-y-2">
+                {sortedQueries.map(([methodName, metrics], index) => (
+                  <div key={index} className="bg-gray-50 p-3 rounded border border-gray-200">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-sm font-medium text-gray-700">{methodName}</span>
+                      <span className="text-sm text-red-600 font-semibold">{metrics.maxTime} ms</span>
+                    </div>
+                    <div className="grid grid-cols-4 gap-2 text-xs text-gray-600 mt-2">
+                      <div>Avg: {metrics.avgTime?.toFixed(2)} ms</div>
+                      <div>Min: {metrics.minTime} ms</div>
+                      <div>Total: {metrics.totalTime} ms</div>
+                      <div>Count: {metrics.count}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Cache Metrics */}
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h3 className="text-xl font-semibold text-gray-800 mb-4">Cache Metrics</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <MetricCard 
+              label="Cache Hits" 
+              value={totalHits}
+              icon="✅"
+            />
+            <MetricCard 
+              label="Cache Misses" 
+              value={totalMisses}
+              icon="❌"
+            />
+            <MetricCard 
+              label="Overall Hit Rate" 
+              value={`${overallHitRate.toFixed(2)}%`}
+              icon="📊"
+            />
+            <MetricCard 
+              label="Total Requests" 
+              value={totalRequests}
+              icon="🔄"
+            />
+          </div>
+
+          {cacheEntries.length > 0 && (
+            <div className="mt-6">
+              <h4 className="text-lg font-semibold text-gray-700 mb-3">Cache Keys Performance</h4>
+              <div className="space-y-2">
+                {cacheEntries.map(([cacheKey, metrics], index) => (
+                  <div key={index} className="bg-gray-50 p-3 rounded border border-gray-200">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-sm font-medium text-gray-700 break-all">{cacheKey}</span>
+                      <span className={`text-sm font-semibold ${metrics.hitRate >= 80 ? 'text-green-600' : metrics.hitRate >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+                        {metrics.hitRate.toFixed(2)}%
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-xs text-gray-600 mt-2">
+                      <div>Hits: {metrics.hits}</div>
+                      <div>Misses: {metrics.misses}</div>
+                      <div>Total: {metrics.hits + metrics.misses}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // Helper component for metric cards
+  const MetricCard = ({ label, value, icon }) => (
+    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-2xl">{icon}</span>
+        <span className="text-sm font-medium text-gray-600">{label}</span>
+      </div>
+      <div className="text-2xl font-bold text-gray-900">{value}</div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -1372,7 +1555,7 @@ const AdminDashboardGraphQL = () => {
         <div className="bg-white rounded-lg shadow mb-6">
           <div className="border-b border-gray-200">
             <nav className="flex space-x-8 px-6" aria-label="Tabs">
-              {['products', 'categories', 'orders', 'inventory', 'users', 'reviews'].map((tab) => (
+              {['products', 'categories', 'orders', 'inventory', 'users', 'reviews', 'performance'].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -1404,6 +1587,7 @@ const AdminDashboardGraphQL = () => {
               {activeTab === 'inventory' && renderInventory()}
               {activeTab === 'users' && renderUsers()}
               {activeTab === 'reviews' && renderReviews()}
+              {activeTab === 'performance' && renderPerformance()}
             </>
           )}
         </div>

@@ -16,6 +16,7 @@ import com.example.commerce.graphql.utils.GraphQLResponseMapper;
 import com.example.commerce.repositories.UserRepository;
 import com.example.commerce.services.OrderService;
 import com.example.commerce.services.ProductService;
+import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -133,7 +134,7 @@ public class OrderGraphQLController {
     // ==================== MUTATIONS ====================
 
     @MutationMapping
-    public OrderResponseDTO createOrder(@Argument CreateOrderInput input) {
+    public OrderResponseDTO createOrder(@Argument @Valid CreateOrderInput input) {
         AddOrderDTO dto = new AddOrderDTO();
         dto.setUserId(input.userId());
         dto.setItems(input.items().stream()
@@ -148,7 +149,7 @@ public class OrderGraphQLController {
     }
 
     @MutationMapping
-    public OrderResponseDTO updateOrderStatus(@Argument Long id, @Argument UpdateOrderStatusInput input) {
+    public OrderResponseDTO updateOrderStatus(@Argument Long id, @Argument @Valid UpdateOrderStatusInput input) {
         UpdateOrderDTO dto = new UpdateOrderDTO();
         dto.setStatus(input.status());
         return orderService.updateOrderStatus(id, dto);

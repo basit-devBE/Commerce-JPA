@@ -9,6 +9,7 @@ import com.example.commerce.graphql.input.InventoryInput.UpdateInventoryInput;
 import com.example.commerce.graphql.input.PaginationInput;
 import com.example.commerce.graphql.utils.GraphQLResponseMapper;
 import com.example.commerce.services.InventoryService;
+import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -74,7 +75,7 @@ public class InventoryGraphQLController {
     // ==================== MUTATIONS ====================
 
     @MutationMapping
-    public InventoryResponseDTO addInventory(@Argument AddInventoryInput input) {
+    public InventoryResponseDTO addInventory(@Argument @Valid AddInventoryInput input) {
         AddInventoryDTO dto = new AddInventoryDTO();
         dto.setProductId(input.productId());
         dto.setQuantity(input.quantity());
@@ -83,7 +84,7 @@ public class InventoryGraphQLController {
     }
 
     @MutationMapping
-    public InventoryResponseDTO updateInventory(@Argument Long id, @Argument UpdateInventoryInput input) {
+    public InventoryResponseDTO updateInventory(@Argument Long id, @Argument @Valid UpdateInventoryInput input) {
         UpdateInventoryDTO dto = new UpdateInventoryDTO();
         dto.setQuantity(input.quantity());
         dto.setLocation(input.location());

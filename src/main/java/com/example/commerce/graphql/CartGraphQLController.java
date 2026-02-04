@@ -11,6 +11,7 @@ import com.example.commerce.graphql.input.CartInput.UpdateCartItemInput;
 import com.example.commerce.repositories.UserRepository;
 import com.example.commerce.services.CartService;
 import com.example.commerce.services.ProductService;
+import jakarta.validation.Valid;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
@@ -44,7 +45,7 @@ public class CartGraphQLController {
     // ==================== MUTATIONS ====================
 
     @MutationMapping
-    public CartResponseDTO addToCart(@Argument Long userId, @Argument AddToCartInput input) {
+    public CartResponseDTO addToCart(@Argument Long userId, @Argument @Valid AddToCartInput input) {
         AddToCartDTO dto = new AddToCartDTO();
         dto.setProductId(input.productId());
         dto.setQuantity(input.quantity());
@@ -55,7 +56,7 @@ public class CartGraphQLController {
     public CartResponseDTO updateCartItem(
             @Argument Long userId,
             @Argument Long productId,
-            @Argument UpdateCartItemInput input) {
+            @Argument @Valid UpdateCartItemInput input) {
         UpdateCartItemDTO dto = new UpdateCartItemDTO();
         dto.setQuantity(input.quantity());
         return cartService.updateCartItem(userId, productId, dto);
